@@ -4,7 +4,8 @@ const { ethers } = require("hardhat");
 const ONE_E_18 = ethers.BigNumber.from("1000000000000000000");
 
 const toContractNumber = (inNum) => {
-  return ethers.BigNumber.from(inNum).mul(ONE_E_18);
+  const res = inNum * 1e18;
+  return ethers.BigNumber.from(res.toString());
 };
 
 describe("Contract", async () => {
@@ -21,7 +22,7 @@ describe("Contract", async () => {
     it("deploys correctly", async () => {
       expect(await contract.totalSupply()).to.equal(0);
       let currentPrice = await contract.price();
-      expect(currentPrice.toString()).to.equal(toContractNumber("1").toString());
+      expect(currentPrice.toString()).to.equal("1");
       let ownerBalance = await contract.balanceOf(owner.address);
       expect(ownerBalance).to.equal(0);
     });
@@ -61,8 +62,7 @@ describe("Contract", async () => {
         console.log(testCase.deposit);
         const acct = testCase.account;
         let currentPrice = await contract.price();
-        const myExpectedPrice = ethers.BigNumber.from(testCase.expectedPrice).mul(ONE_E_18);
-        expect(currentPrice.toString()).to.equal(myExpectedPrice.toString());
+        expect(currentPrice.toString()).to.equal(testCase.expectedPrice);
 
         await acct.sendTransaction({
           to: contract.address,
@@ -70,7 +70,8 @@ describe("Contract", async () => {
         });
 
         let userBalance = await contract.balanceOf(acct.address);
-        expect(userBalance).to.equal(testCase.expectedBalance);
+        const myExpectedBalance = toContractNumber(testCase.expectedBalance);
+        expect(userBalance).to.equal(myExpectedBalance.toString());
       }
     });
   });

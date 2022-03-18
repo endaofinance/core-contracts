@@ -41,7 +41,7 @@ contract ManagerToken is AccessControlEnumerable, ERC20 {
 
         if (supply_ == 0) {
             // Initial price
-            price_ = 1000000000000000000; // 1 eth
+            price_ = 1; // 1 wei
         } else {
             uint256 value_ = totalValue() - msg.value; // Pre money value
             console.log("supply", supply_);
@@ -63,7 +63,7 @@ contract ManagerToken is AccessControlEnumerable, ERC20 {
 
         if (supply_ == 0) {
             // Initial price
-            return 1000000000000000000; // 1 eth
+            return 1; // 1 wei
         }
 
         uint256 value_ = totalValue();
