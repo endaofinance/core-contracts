@@ -5,13 +5,11 @@ pragma solidity ^0.8.11;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Capped.sol";
-import "@uniswap/v3-periphery/contracts/interfaces/IQuoter.sol";
 
 // Dev deps
 import "hardhat/console.sol";
 
-contract ManagerToken is AccessControlEnumerable, ERC20 {
+contract Endaoment is AccessControlEnumerable, ERC20Burnable {
     event HardBurn(uint256 amount);
     bytes32 public constant BENEFICIARY_ROLE = keccak256("BENEFICIARY_ROLE");
     bytes32 public constant REBALANCER_ROLE = keccak256("REBALANCER_ROLE");
@@ -37,10 +35,6 @@ contract ManagerToken is AccessControlEnumerable, ERC20 {
     }
 
     receive() external payable {
-        // determine how mucch equity there is
-        // determine how much user is depositing
-        // accept deposit for the max amount
-        // return leftover eth
         uint256 price_;
         uint256 supply_ = totalSupply();
 
@@ -68,15 +62,16 @@ contract ManagerToken is AccessControlEnumerable, ERC20 {
         return value_ / supply_;
     }
 
-    //function burn(uint256 amount) public virtual {
-    //uint256 callerEquity = myEquity();
+    function burn(uint256 amount) public virtual override {
+        uint256 outboundTarget = amount * price();
+        require(address(this).balance >= outboundTarget, "Reserve does not have enough balance, try calling hardBurn");
 
-    //uint256 reserveBalance = address(this).balance;
-    //require(reserveBalance >= callerEquity, "Reserve does not have enough balance, try calling hardBurn");
+        (bool sent, ) = _msgSender().call{value: outboundTarget}("");
+        require(sent, "Failed to send Ether to burner");
 
-    //transfer(_msgSender(), callerEquity);
-    //super._burn(_msgSender(), amount); // TODO: can msg.sender be a 0 address?
-    //}
+        // Burn wont allow me to burn tokens I dont have
+        super._burn(_msgSender(), amount); // TODO: can msg.sender be a 0 address?
+    }
 
     // Execute rebalance witholding equity amount and then burns the token
     //function hardBurn(uint256 tokenAmount) public virtual {
@@ -127,7 +122,7 @@ contract ManagerToken is AccessControlEnumerable, ERC20 {
         }
 
         (bool sent, ) = _manager.call{value: totalAmount}("");
-        require(sent, "Failed to send Ether");
+        require(sent, "Failed to send Ether to manager");
     }
 
     //function claimFee(uint256 percentage) public virtual {

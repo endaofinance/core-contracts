@@ -15,10 +15,10 @@ describe("Contract", async () => {
     const signers = await ethers.getSigners();
     owner = signers[0];
     manager = signers[10];
-    const ManagerToken = await ethers.getContractFactory("ManagerToken");
-    contract = await ManagerToken.deploy(
-      "Manager token",
-      "mgr",
+    const Endaoment = await ethers.getContractFactory("Endaoment");
+    contract = await Endaoment.deploy(
+      "Test Endaoment",
+      "tendmt",
       "700",
       "25",
       manager.address,
@@ -124,10 +124,34 @@ describe("Contract", async () => {
     it("cant claim if not a benificiary");
   });
 
-  describe("burning", async () => {
-    it("burns correctly");
+  describe.only("burning", async () => {
+    it("burns correctly", async () => {
+      const [owner] = await ethers.getSigners();
+
+      await owner.sendTransaction({
+        to: contract.address,
+        value: ethers.utils.parseEther("1.0"), // Sends 1.0 ether
+      });
+
+      let ownerBalance = await contract.balanceOf(owner.address);
+      expect(ownerBalance.toString()).to.equal(ethers.utils.parseEther("1"));
+
+      await contract.burn(ethers.utils.parseEther("0.5"));
+
+      ownerBalance = await contract.balanceOf(owner.address);
+      expect(ownerBalance.toString()).to.equal(ethers.utils.parseEther("0.5"));
+
+      let contractBalance = await ethers.provider.getBalance(contract.address);
+
+      expect(contractBalance.toString()).to.equal(
+        ethers.utils.parseEther("0.5").toString(),
+      );
+    });
     it("cant burn tokens I dont own");
     it("cant burn tokens not in reserves");
-    it("hard burns correclty");
+  });
+
+  describe("hard burn", async () => {
+    it("works correctly");
   });
 });
