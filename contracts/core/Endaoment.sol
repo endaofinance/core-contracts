@@ -3,6 +3,7 @@
 pragma solidity ^0.8.11;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 
@@ -10,7 +11,9 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "hardhat/console.sol";
 
 contract Endaoment is AccessControlEnumerable, ERC20Burnable {
+    using SafeERC20 for IERC20;
     event HardBurn(uint256 amount);
+    mapping(address => bool) public _assets;
     bytes32 public constant BENEFICIARY_ROLE = keccak256("BENEFICIARY_ROLE");
     bytes32 public constant REBALANCER_ROLE = keccak256("REBALANCER_ROLE");
     address _manager;
@@ -23,15 +26,17 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
         string memory symbol_,
         uint256 annualDrawBips_,
         uint256 targetReserveBips_,
-        address manager_
+        address manager_,
+        address _coreAsset
     ) ERC20(name_, symbol_) {
         // 18 decimals by default
-        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
-        _setupRole(BENEFICIARY_ROLE, _msgSender());
-        _setupRole(REBALANCER_ROLE, _msgSender());
+        _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
+        _grantRole(BENEFICIARY_ROLE, _msgSender());
+        _grantRole(REBALANCER_ROLE, _msgSender());
         _epochDrawBips = annualDrawBips_ / _epochsPerAnum;
         _targetReserveBips = targetReserveBips_;
         _manager = manager_;
+        _assets[_coreAsset] = true;
     }
 
     receive() external payable {
@@ -49,6 +54,39 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
         uint256 amount = msg.value / price_;
 
         super._mint(_msgSender(), amount);
+    }
+
+    function enableAsset(address asset_) external {
+        require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "Only admins can enable assets");
+        _assets[asset_] = true;
+    }
+
+    function disableAsset(address asset_) external {
+        require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "Only admins can disableAsset assets");
+        _assets[asset_] = false;
+    }
+
+    function mint(address asset_, uint256 amount_) external {
+        uint256 price_;
+        uint256 supply_ = totalSupply();
+
+        require(_assets[asset_], "Asset must be enabled for deposit");
+        IERC20 assetContract = IERC20(asset_);
+        assetContract.safeTransferFrom(_msgSender(), address(this), amount_);
+
+        uint256 value = 1; // TODO: calculate value of deposit in ETH
+
+        // Get value of assets
+        if (supply_ == 0) {
+            // Initial price
+            price_ = 1; // 1 wei
+        } else {
+            uint256 value_ = totalValue() - value;
+            price_ = value_ / supply_;
+        }
+
+        uint256 contractAmount = value / price_;
+        super._mint(_msgSender(), contractAmount);
     }
 
     function price() public view virtual returns (uint256) {
@@ -117,9 +155,7 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
         uint256 reserveAmount = (address(this).balance * _targetReserveBips) / 10000;
         uint256 totalAmount = address(this).balance - reserveAmount;
 
-        if (totalAmount <= 1) {
-            return;
-        }
+        require(totalAmount > 1, "Total amount to rebalance needs too be greater then 1");
 
         (bool sent, ) = _manager.call{value: totalAmount}("");
         require(sent, "Failed to send Ether to manager");

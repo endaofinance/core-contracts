@@ -9,6 +9,7 @@
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.4",
     "@nomiclabs/hardhat-waffle": "^2.0.2",
+    "@openzeppelin/test-helpers": "^0.5.15",
     "@uniswap/v3-periphery": "^1.4.0",
     "chai": "^4.3.4",
     "ethereum-waffle": "^3.4.0",
@@ -16,6 +17,7 @@
     "hardhat": "^2.8.3"
   },
   "dependencies": {
+    "@defi-wonderland/smock": "^2.0.7",
     "@openzeppelin/contracts": "^4.4.2",
     "prettier": "^2.6.0",
     "prettier-plugin-solidity": "^1.0.0-beta.19"

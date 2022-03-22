@@ -1,5 +1,6 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
+const { smock } = require("@defi-wonderland/smock");
 
 const ONE_E_18 = ethers.BigNumber.from("1000000000000000000");
 
@@ -11,10 +12,20 @@ const toContractNumber = (inNum) => {
 describe("Contract", async () => {
   let contract;
   let owner;
+  let asset;
   beforeEach(async () => {
     const signers = await ethers.getSigners();
     owner = signers[0];
     manager = signers[10];
+
+    const assetFactory = await smock.mock("ERC20Mock");
+    asset = await assetFactory.deploy(
+      "Test",
+      "TST",
+      owner.address,
+      ethers.utils.parseEther("100"),
+    );
+
     const Endaoment = await ethers.getContractFactory("Endaoment");
     contract = await Endaoment.deploy(
       "Test Endaoment",
@@ -22,6 +33,7 @@ describe("Contract", async () => {
       "700",
       "25",
       manager.address,
+      asset.address,
     );
   });
 
@@ -33,6 +45,26 @@ describe("Contract", async () => {
       let ownerBalance = await contract.balanceOf(owner.address);
       expect(ownerBalance).to.equal(0);
     });
+  });
+
+  describe("mint", async () => {
+    it("mints correctly", async () => {
+      const amount = ethers.utils.parseEther("10.0");
+      await asset.approve(contract.address, amount);
+
+      await contract.mint(asset.address, amount);
+
+      expect(await asset.balanceOf(owner.address)).to.equal(
+        ethers.utils.parseEther("90"),
+      );
+      expect(await asset.balanceOf(contract.address)).to.equal(
+        ethers.utils.parseEther("10"),
+      );
+
+      // TODO: check price
+    });
+    it("Cant mint because its not approved");
+    it("Cant mint because not enough balance");
   });
 
   describe("deposits", async () => {
@@ -124,7 +156,7 @@ describe("Contract", async () => {
     it("cant claim if not a benificiary");
   });
 
-  describe.only("burning", async () => {
+  describe("burning", async () => {
     it("burns correctly", async () => {
       const [owner] = await ethers.getSigners();
 
@@ -147,11 +179,21 @@ describe("Contract", async () => {
         ethers.utils.parseEther("0.5").toString(),
       );
     });
-    it("cant burn tokens I dont own");
     it("cant burn tokens not in reserves");
+    it("cant burn tokens I dont own");
   });
 
   describe("hard burn", async () => {
     it("works correctly");
+  });
+
+  describe("contract management", async () => {
+    it("adds new benificiary");
+    it("removes benificiary");
+    it("assigns new admin");
+    it("can enable assets");
+    it("cant enable assets");
+    it("can disable assets");
+    it("cant disable assets");
   });
 });
