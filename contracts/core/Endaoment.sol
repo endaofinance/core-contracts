@@ -29,6 +29,7 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
     uint256 _epochDrawBips;
     uint256 _epochsPerAnum = 12;
 
+    // 18 decimals by default
     constructor(
         string memory name_,
         string memory symbol_,
@@ -38,7 +39,6 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
         address assetErc20_,
         address assetRouter_
     ) ERC20(name_, symbol_) {
-        // 18 decimals by default
         _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
         _grantRole(BENEFICIARY_ROLE, _msgSender());
         _grantRole(REBALANCER_ROLE, _msgSender());
@@ -87,7 +87,7 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
         super._mint(_msgSender(), contractAmount);
     }
 
-    function price() public view virtual returns (uint256) {
+    function price() public view returns (uint256) {
         uint256 supply_ = totalSupply();
         if (supply_ == 0) {
             // Initial price
@@ -109,42 +109,19 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
         super._burn(_msgSender(), amount); // TODO: can msg.sender be a 0 address?
     }
 
-    // Execute rebalance witholding equity amount and then burns the token
-    //function hardBurn(uint256 tokenAmount) public virtual {
-    //uint256 targetEquity = _calculateEquity(tokenAmount);
-    //require(targetEquity >= totalValue(), "Not enough equity for a hardBurn");
-    //rebalance(targetEquity);
-    //burn(tokenAmount);
-    //emit HardBurn(tokenAmount);
-    //}
-
     // Return the value of the contract in wei
-    function totalValue() public view virtual returns (uint256) {
+    function totalValue() public view returns (uint256) {
         uint256 lpValue = 0;
-        // Go through all assets
 
+        //IERC20 assetContract = IERC20(_asset.erc20Contract);
+        //uint256 myBalance = assetContract.balanceOf(address(this));
+        // price per asset
         //IUniswapV2Router02 router = IUniswapV2Router02(_asset.routerContract);
 
-        //router.quote()
-
         return lpValue.add(address(this).balance);
-        // TODO:
-        //uint256 quoteBalance = 0; // TODO: get balance of quote
-        //uint256 baseBalance = 100; // TODO: gjt balance of base
-        //uint24 fee = 3000;
-        //uint160 sqrtPriceLimitX96 = 0;
-        //uint256 quoteValue = _quoter.quoteExactInputSingle(
-        //_baseToken,
-        //_quoteToken,
-        //fee,
-        //baseBalance,
-        //sqrtPriceLimitX96
-        //);
-        //return baseBalance + quoteValue;
-        //// Add oge all eth
     }
 
-    function rebalance() public virtual {
+    function rebalance() public {
         // Calculate midprice of pair
         // + / - a target % gain
         // Sell everything
@@ -163,10 +140,4 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
         (bool sent, ) = _manager.call{value: totalAmount}("");
         require(sent, "Failed to send Ether to manager");
     }
-
-    //function claimFee(uint256 percentage) public virtual {
-    //require(hasRole(CLAIMER_ROLE, _msgSender()), "Public key can not claimFee");
-    //uint256 myBalance = balanceOf(address(this));
-    //transfer(address(this), (myBalance * percentage) / 100);
-    //}
 }
