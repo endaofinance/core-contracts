@@ -1,6 +1,7 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const { smock } = require("@defi-wonderland/smock");
+const { constants } = require("@openzeppelin/test-helpers");
 
 const ONE_E_18 = ethers.BigNumber.from("1000000000000000000");
 
@@ -34,6 +35,7 @@ describe("Contract", async () => {
       "25",
       manager.address,
       asset.address,
+      constants.ZERO_ADDRESS,
     );
   });
 
