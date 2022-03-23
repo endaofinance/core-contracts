@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "@sushiswap/core/contracts/uniswapv2/interfaces/IUniswapV2Router02.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 // Dev deps
 import "hardhat/console.sol";
@@ -17,6 +18,7 @@ struct UniswapV2Asset {
 }
 
 contract Endaoment is AccessControlEnumerable, ERC20Burnable {
+    using SafeMath for uint256;
     using SafeERC20 for IERC20;
     event HardBurn(uint256 amount);
     UniswapV2Asset public _asset;
@@ -40,7 +42,7 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
         _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
         _grantRole(BENEFICIARY_ROLE, _msgSender());
         _grantRole(REBALANCER_ROLE, _msgSender());
-        _epochDrawBips = annualDrawBips_ / _epochsPerAnum;
+        _epochDrawBips = annualDrawBips_.div(_epochsPerAnum);
         _targetReserveBips = targetReserveBips_;
         _manager = manager_;
         _asset = UniswapV2Asset({erc20Contract: assetErc20_, routerContract: assetRouter_});
@@ -54,8 +56,8 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
             // Initial price
             price_ = 1; // 1 wei
         } else {
-            uint256 value_ = totalValue() - msg.value; // Pre money value
-            price_ = value_ / supply_;
+            uint256 value_ = totalValue().sub(msg.value); // Pre money value
+            price_ = value_.div(supply_);
         }
 
         uint256 amount = msg.value / price_;
@@ -77,11 +79,11 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
             // Initial price
             price_ = 1; // 1 wei
         } else {
-            uint256 value_ = totalValue() - value;
-            price_ = value_ / supply_;
+            uint256 value_ = totalValue().sub(value);
+            price_ = value_.div(supply_);
         }
 
-        uint256 contractAmount = value / price_;
+        uint256 contractAmount = value.div(price_);
         super._mint(_msgSender(), contractAmount);
     }
 
@@ -97,7 +99,7 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
     }
 
     function burn(uint256 amount) public virtual override {
-        uint256 outboundTarget = amount * price();
+        uint256 outboundTarget = amount.mul(price());
         require(address(this).balance >= outboundTarget, "Reserve does not have enough balance, try calling hardBurn");
 
         (bool sent, ) = _msgSender().call{value: outboundTarget}("");
@@ -121,7 +123,11 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
         uint256 lpValue = 0;
         // Go through all assets
 
-        return lpValue + address(this).balance;
+        //IUniswapV2Router02 router = IUniswapV2Router02(_asset.routerContract);
+
+        //router.quote()
+
+        return lpValue.add(address(this).balance);
         // TODO:
         //uint256 quoteBalance = 0; // TODO: get balance of quote
         //uint256 baseBalance = 100; // TODO: gjt balance of base
@@ -146,11 +152,11 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
         // safe approve
 
         // Inflate supply so that the benificiary can claim new supply
-        uint256 benificiaryInflationAmount = (totalSupply() * _epochDrawBips) / 10000;
+        uint256 benificiaryInflationAmount = (totalSupply() * _epochDrawBips).div(10000);
         super._mint(address(this), benificiaryInflationAmount); // Inflate supply to assigm value to the claimers
 
-        uint256 reserveAmount = (address(this).balance * _targetReserveBips) / 10000;
-        uint256 totalAmount = address(this).balance - reserveAmount;
+        uint256 reserveAmount = address(this).balance.mul(_targetReserveBips).div(10000);
+        uint256 totalAmount = address(this).balance.sub(reserveAmount);
 
         require(totalAmount > 1, "Total amount to rebalance needs too be greater then 1");
 
