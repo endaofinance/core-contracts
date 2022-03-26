@@ -58,33 +58,29 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
         require(false, "Contract does not accept ETH");
     }
 
-    function mint(uint256 lockedAssets_) external {
+    function mint(uint256 lockingAssets_) external {
         address pair = getPairAddress(_asset.factory, _asset.base, _asset.quote);
         IERC20 assetContract = IERC20(pair);
 
-        console.log("totalSupply", totalSupply());
-
         uint256 senderBalance = assetContract.balanceOf(_msgSender());
-        require(senderBalance >= lockedAssets_, "Not enough assets to lock");
-        assetContract.safeTransferFrom(_msgSender(), address(this), lockedAssets_);
+        uint256 lockedAssets = assetContract.balanceOf(address(this));
+        console.log("lockingAssets_ mint", lockingAssets_);
+        console.log("totalSupply mint", totalSupply());
+        console.log("lockedAssets mint", lockedAssets);
 
         uint256 tokens;
         if (totalSupply() != 0) {
-            tokens = lockedAssets_.mul(totalSupply());
+            tokens = lockingAssets_.mul(totalSupply()).div(lockedAssets);
         } else {
-            tokens = lockedAssets_; // Start off 1 to 1
+            tokens = lockingAssets_; // Start off 1 to 1
         }
 
-        //uint256 price = price();
-        //uint256 tokens = lockedAssets_.div(price);
+        require(senderBalance >= lockingAssets_, "Not enough assets to lock");
+        assetContract.safeTransferFrom(_msgSender(), address(this), lockingAssets_);
 
-        //console.log("price (mint)", price);
-        console.log("assetsRequired (mint)", lockedAssets_);
-        console.log("Sender asset balance", senderBalance);
-
-        super._mint(_msgSender(), tokens);
-        console.log("tokens", tokens);
-        console.log("totalSupply", totalSupply());
+        console.log("target tokens mint", tokens);
+        console.log("mint x to y", tokens, _msgSender());
+        _mint(_msgSender(), tokens);
     }
 
     // TODO: move to lib
@@ -167,16 +163,17 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
     function burn(uint256 tokensToBurn_) public virtual override {
         address pair = getPairAddress(_asset.factory, _asset.base, _asset.quote);
         IERC20 assetContract = IERC20(pair);
+        uint256 assetSupply = assetContract.balanceOf(address(this));
         uint256 userBalance = balanceOf(_msgSender());
 
         console.log("tokensToBurn_ (burn)", tokensToBurn_);
         console.log("totalSupply (burn)", totalSupply());
-        console.log("userBalance (burn)", userBalance);
-        uint256 targetSupply = tokensToBurn_.mul(totalSupply()).div(userBalance);
-        uint256 outboundTarget = totalSupply().sub(targetSupply);
+        console.log("assetSupply (burn)", assetSupply);
+        uint256 outbounAssets = tokensToBurn_.mul(assetSupply).div(totalSupply());
+        console.log("outbounAssets (burn)", outbounAssets);
 
-        assetContract.approve(address(this), outboundTarget);
-        assetContract.safeTransferFrom(address(this), _msgSender(), outboundTarget);
+        assetContract.approve(address(this), outbounAssets);
+        assetContract.safeTransferFrom(address(this), _msgSender(), outbounAssets);
         assetContract.approve(address(this), 0); // Sucks to have another gas opteration but this is more secure.
 
         _burn(_msgSender(), tokensToBurn_); // TODO: can msg.sender be a 0 address?

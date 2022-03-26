@@ -1,7 +1,7 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const { smock } = require("@defi-wonderland/smock");
-const { BN } = require("@openzeppelin/test-helpers");
+const { expectEvent } = require("@openzeppelin/test-helpers");
 
 const toContractNumber = (inNum, multiplier = 1e18) => {
   const res = inNum * multiplier;
@@ -150,13 +150,21 @@ describe("Contract", async () => {
       assetBalance = await asset.balanceOf(contract.address);
       expect(assetBalance).to.equal("5");
 
-      price = await contract.price();
-      expect(price).to.eq(toContractNumber("1", 1));
+      await contract.mint("1");
+      ownerBalance = await contract.balanceOf(owner.address);
+      expect(ownerBalance).to.equal("6");
 
       await contract.epoch();
-      price = await contract.price();
-      expect(price).to.eq(toContractNumber("1", 1));
+
+      await contract.burn("6");
+      ownerBalance = await contract.balanceOf(owner.address);
+      expect(ownerBalance).to.equal("6");
+
+      assetBalance = await asset.balanceOf(contract.address);
+      expect(assetBalance).to.equal("0");
     });
+    it("makes sure that events are firing");
+    it("works with different users");
     it("works with different decimals");
     it("cant burn tokens not in reserves");
     it("cant burn tokens I dont own");
