@@ -33,7 +33,7 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
     uint256 _targetReserveBips;
     uint256 _epochDrawBips;
     uint256 _epochsPerAnum = 12;
-    uint256 _initialPrice = 1 * 1e8;
+    uint256 _initialPrice = 1;
 
     // 18 decimals by default
     constructor(
@@ -61,18 +61,30 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
     function mint(uint256 lockedAssets_) external {
         address pair = getPairAddress(_asset.factory, _asset.base, _asset.quote);
         IERC20 assetContract = IERC20(pair);
+
+        console.log("totalSupply", totalSupply());
+
         uint256 senderBalance = assetContract.balanceOf(_msgSender());
         require(senderBalance >= lockedAssets_, "Not enough assets to lock");
         assetContract.safeTransferFrom(_msgSender(), address(this), lockedAssets_);
 
-        uint256 price = price();
-        uint256 tokens = lockedAssets_.div(price);
+        uint256 tokens;
+        if (totalSupply() != 0) {
+            tokens = lockedAssets_.mul(totalSupply());
+        } else {
+            tokens = lockedAssets_; // Start off 1 to 1
+        }
 
-        console.log("price (mint)", price);
+        //uint256 price = price();
+        //uint256 tokens = lockedAssets_.div(price);
+
+        //console.log("price (mint)", price);
         console.log("assetsRequired (mint)", lockedAssets_);
         console.log("Sender asset balance", senderBalance);
 
         super._mint(_msgSender(), tokens);
+        console.log("tokens", tokens);
+        console.log("totalSupply", totalSupply());
     }
 
     // TODO: move to lib
@@ -153,15 +165,21 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
     }
 
     function burn(uint256 tokensToBurn_) public virtual override {
-        uint256 assumedSupply = totalSupply().sub(tokensToBurn_);
-        uint256 price = postMoneyPrice(assumedSupply);
-        uint256 outboundTarget = tokensToBurn_.div(price);
         address pair = getPairAddress(_asset.factory, _asset.base, _asset.quote);
         IERC20 assetContract = IERC20(pair);
+        uint256 userBalance = balanceOf(_msgSender());
+
+        console.log("tokensToBurn_ (burn)", tokensToBurn_);
+        console.log("totalSupply (burn)", totalSupply());
+        console.log("userBalance (burn)", userBalance);
+        uint256 targetSupply = tokensToBurn_.mul(totalSupply()).div(userBalance);
+        uint256 outboundTarget = totalSupply().sub(targetSupply);
+
         assetContract.approve(address(this), outboundTarget);
         assetContract.safeTransferFrom(address(this), _msgSender(), outboundTarget);
         assetContract.approve(address(this), 0); // Sucks to have another gas opteration but this is more secure.
-        super._burn(_msgSender(), tokensToBurn_); // TODO: can msg.sender be a 0 address?
+
+        _burn(_msgSender(), tokensToBurn_); // TODO: can msg.sender be a 0 address?
     }
 
     function epoch() public {

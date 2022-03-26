@@ -87,7 +87,7 @@ describe("Contract", async () => {
       expect(ownerBalance).to.equal(0);
 
       const price = await contract.price();
-      expect(price).equal(toContractNumber("1", 1e8));
+      expect(price).equal(toContractNumber("1", 1));
     });
   });
 
@@ -96,7 +96,7 @@ describe("Contract", async () => {
       const startingBalance = await asset.balanceOf(owner.address);
 
       let price = await contract.price();
-      expect(price).to.eq(toContractNumber("1", 1e8));
+      expect(price).to.eq(toContractNumber("1", 1));
 
       let assetBalance = await asset.balanceOf(contract.address);
       expect(assetBalance).to.equal("0");
@@ -112,7 +112,7 @@ describe("Contract", async () => {
       expect(assetBalance).to.equal("1");
 
       price = await contract.price();
-      expect(price).to.eq(toContractNumber("1", 1e8));
+      expect(price).to.eq(toContractNumber("1", 1));
     });
     it("can mint 1 token");
     it("Cant mint because its not approved");
@@ -128,7 +128,7 @@ describe("Contract", async () => {
       expect(assetBalance).to.equal("0");
 
       let price = await contract.price();
-      expect(price).to.eq(toContractNumber("1", 1e8));
+      expect(price).to.eq(toContractNumber("1", 1));
 
       let ownerBalance = await contract.balanceOf(owner.address);
       expect(ownerBalance).to.equal("0");
@@ -141,21 +141,21 @@ describe("Contract", async () => {
       expect(assetBalance).to.equal("10");
 
       price = await contract.price();
-      expect(price).to.eq(toContractNumber("1", 1e8));
+      expect(price).to.eq(toContractNumber("1", 1));
 
       await contract.burn("5");
-      assetBalance = await asset.balanceOf(contract.address);
-      expect(assetBalance).to.equal("5");
-
       ownerBalance = await contract.balanceOf(owner.address);
       expect(ownerBalance).to.equal("5");
 
+      assetBalance = await asset.balanceOf(contract.address);
+      expect(assetBalance).to.equal("5");
+
       price = await contract.price();
-      expect(price).to.eq(toContractNumber("1", 1e8));
+      expect(price).to.eq(toContractNumber("1", 1));
 
       await contract.epoch();
       price = await contract.price();
-      expect(price).to.eq(toContractNumber("1", 1e8));
+      expect(price).to.eq(toContractNumber("1", 1));
     });
     it("works with different decimals");
     it("cant burn tokens not in reserves");
