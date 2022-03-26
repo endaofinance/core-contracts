@@ -44,15 +44,15 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
         uint256 targetReserveBips_,
         address factory_,
         address router_,
-        address base_,
-        address quote_
+        address token0_,
+        address token1_
     ) ERC20(name_, symbol_) {
         _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
         _grantRole(BENEFICIARY_ROLE, _msgSender());
         _grantRole(REBALANCER_ROLE, _msgSender());
         _epochDrawBips = annualDrawBips_.div(_epochsPerAnum);
         _targetReserveBips = targetReserveBips_;
-        _asset = UniswapV2Asset({router: router_, factory: factory_, base: base_, quote: quote_});
+        _asset = UniswapV2Asset({router: router_, factory: factory_, base: token0_, quote: token1_});
     }
 
     receive() external payable {
@@ -101,9 +101,22 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
         _burn(_msgSender(), tokensToBurn_); // TODO: can msg.sender be a 0 address?
     }
 
+    function claim() public returns (uint256 claimed) {
+        require(hasRole(BENEFICIARY_ROLE, _msgSender()), "DOES_NOT_HAVE_BENIFICIARY_ROLE");
+        claimed = balanceOf(address(this));
+        transferFrom(address(this), _msgSender(), claimed);
+    }
+
+    function claimAndBurn() public returns (uint256 claimed) {
+        require(hasRole(BENEFICIARY_ROLE, _msgSender()), "DOES_NOT_HAVE_BENIFICIARY_ROLE");
+        claimed = claim();
+        burn(claimed);
+    }
+
     function epoch() public {
         // TODO: validate message sender
         // TODO: probably should be inflating linarly
+        require(hasRole(REBALANCER_ROLE, _msgSender()), "DOES_NOT_HAVE_REBALANCER_ROLE");
         uint256 benificiaryInflationAmount = totalSupply().mul(_epochDrawBips).div(1000);
         if (benificiaryInflationAmount == 0) {
             return;

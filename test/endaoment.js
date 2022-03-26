@@ -80,7 +80,7 @@ describe("Endaoment", async () => {
     );
   });
 
-  describe.only("deploy", async () => {
+  describe("deploy", async () => {
     it("deploys correctly", async () => {
       expect(await contract.totalSupply()).to.equal(0);
       let ownerBalance = await contract.balanceOf(owner.address);
@@ -88,7 +88,7 @@ describe("Endaoment", async () => {
     });
   });
 
-  describe.only("mint", async () => {
+  describe("mint", async () => {
     it("mints correctly", async () => {
       const startingBalance = await asset.balanceOf(owner.address);
 
@@ -109,7 +109,7 @@ describe("Endaoment", async () => {
     it("Cant mint because its not approved");
     it("Cant mint because not enough balance");
   });
-  describe.only("burning", async () => {
+  describe("burning", async () => {
     it("burns correctly", async () => {
       const [owner] = await ethers.getSigners();
 
@@ -155,21 +155,16 @@ describe("Endaoment", async () => {
     it("cant burn tokens I dont own");
   });
 
-  describe("management", async () => {
-    it("epochs correctly");
-    it("doesnt let not approved people epoch");
-  });
-
-  describe("claiming", async () => {
+  describe("claim", async () => {
     it("claims correctly");
     it("cant claim if not a benificiary");
-  });
-
-  describe("hard burn", async () => {
-    it("works correctly");
+    it("claimAndBurn correctly");
+    it("cant claimAndBurn if not a benificiary");
   });
 
   describe("contract management", async () => {
+    it("epochs correctly");
+    it("doesnt let not approved people epoch");
     it("adds new benificiary");
     it("removes benificiary");
     it("assigns new admin");
