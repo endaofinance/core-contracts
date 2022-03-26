@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "../libraries/EndaoLibrary.sol";
 
 // External interfaces
 import "@sushiswap/core/contracts/uniswapv2/interfaces/IUniswapV2Pair.sol";
@@ -64,9 +65,6 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
 
         uint256 senderBalance = assetContract.balanceOf(_msgSender());
         uint256 lockedAssets = assetContract.balanceOf(address(this));
-        console.log("lockingAssets_ mint", lockingAssets_);
-        console.log("totalSupply mint", totalSupply());
-        console.log("lockedAssets mint", lockedAssets);
 
         uint256 tokens;
         if (totalSupply() != 0) {
@@ -78,99 +76,23 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
         require(senderBalance >= lockingAssets_, "Not enough assets to lock");
         assetContract.safeTransferFrom(_msgSender(), address(this), lockingAssets_);
 
-        console.log("target tokens mint", tokens);
-        console.log("mint x to y", tokens, _msgSender());
         _mint(_msgSender(), tokens);
     }
 
-    // TODO: move to lib
     function getPairAddress(
         address factory,
         address addr1,
         address addr2
-    ) public view returns (address pair) {
-        IUniswapV2Factory factoryContract = IUniswapV2Factory(factory);
-
-        pair = factoryContract.getPair(addr1, addr2);
-        require(pair != address(0), "Pair does not exist");
-    }
-
-    // TODO: move to lib
-    // TODO: explore better ways of calculating midprice
-    //function getAssetMidPrice(
-    //address factory,
-    //address addr1,
-    //address addr2
-    //) public view returns (uint256) {
-    //IUniswapV2Factory factoryContract = IUniswapV2Factory(factory);
-    //address pairAddress = factoryContract.getPair(addr1, addr2);
-    //IERC20 token1 = IERC20(addr1);
-    //IERC20 token2 = IERC20(addr2);
-    //uint256 balance1 = token1.balanceOf(pairAddress);
-    //uint256 balance2 = token2.balanceOf(pairAddress);
-    //return balance2.div(balance1);
-    //}
-
-    // TODO: move to lib
-    // Give me the assets this endaoment controls
-    //function getAssetBalances(
-    //address factory,
-    //address addr1,
-    //address addr2
-    //) public view returns (uint256 balance1, uint256 balance2) {
-    //IUniswapV2Factory factoryContract = IUniswapV2Factory(factory);
-    //address pairAddress = factoryContract.getPair(addr1, addr2);
-
-    //// reserves
-    //IERC20 pairToken = IERC20(pairAddress);
-    //IERC20 token1 = IERC20(addr1);
-    //IERC20 token2 = IERC20(addr2);
-
-    //uint256 _totalSupply = pairToken.totalSupply();
-    //uint256 liquidity = pairToken.balanceOf(address(this));
-
-    //balance1 = token1.balanceOf(pairAddress);
-    //balance2 = token2.balanceOf(pairAddress);
-
-    //console.log("liquidity", liquidity);
-    //console.log("totalSupply", _totalSupply);
-    //console.log("balance1", balance1);
-    //console.log("balance2", balance2);
-
-    //balance1 = liquidity.mul(balance1).div(_totalSupply);
-    //balance2 = liquidity.mul(balance2).div(_totalSupply);
-    //}
-
-    function postMoneyPrice(uint256 assumedSupply_) public view returns (uint256) {
-        uint256 value_ = IERC20(getPairAddress(_asset.factory, _asset.base, _asset.quote)).balanceOf(address(this));
-        console.log("value", value_);
-        if (value_ == 0) {
-            return _initialPrice;
-        }
-        console.log("assumedSupply", assumedSupply_);
-        return value_.div(assumedSupply_);
-    }
-
-    function price() public view returns (uint256) {
-        uint256 supply = totalSupply();
-        if (supply > 0) {
-            return postMoneyPrice(totalSupply());
-        }
-
-        return _initialPrice;
+    ) private view returns (address pair) {
+        return EndaoLibrary.getUniswapV2PairAddress(factory, addr1, addr2);
     }
 
     function burn(uint256 tokensToBurn_) public virtual override {
         address pair = getPairAddress(_asset.factory, _asset.base, _asset.quote);
         IERC20 assetContract = IERC20(pair);
         uint256 assetSupply = assetContract.balanceOf(address(this));
-        uint256 userBalance = balanceOf(_msgSender());
 
-        console.log("tokensToBurn_ (burn)", tokensToBurn_);
-        console.log("totalSupply (burn)", totalSupply());
-        console.log("assetSupply (burn)", assetSupply);
         uint256 outbounAssets = tokensToBurn_.mul(assetSupply).div(totalSupply());
-        console.log("outbounAssets (burn)", outbounAssets);
 
         assetContract.approve(address(this), outbounAssets);
         assetContract.safeTransferFrom(address(this), _msgSender(), outbounAssets);
@@ -183,8 +105,6 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
         // TODO: validate message sender
         // TODO: probably should be inflating linarly
         uint256 benificiaryInflationAmount = totalSupply().mul(_epochDrawBips).div(1000);
-        console.log("benificiaryInflationAmount", benificiaryInflationAmount);
-        console.log("_epochDrawBips", _epochDrawBips);
         if (benificiaryInflationAmount == 0) {
             return;
         }
