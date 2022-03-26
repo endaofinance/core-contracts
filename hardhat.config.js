@@ -1,8 +1,11 @@
 require("@nomiclabs/hardhat-waffle");
+require("dotenv").config();
 
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
+
+const KOVAN_XPRV = "";
 module.exports = {
   solidity: {
     compilers: [
@@ -31,5 +34,11 @@ module.exports = {
         },
       },
     ],
+  },
+  networks: {
+    kovan: {
+      url: process.env.KOVAN_URL,
+      accounts: [process.env.KOVAN_XPRV],
+    },
   },
 };
