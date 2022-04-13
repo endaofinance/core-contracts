@@ -22,7 +22,7 @@ contract EndaomentFactory is Ownable {
     ) public returns (address createdAddress) {
         address pair_ = EndaoLibrary.getUniswapV2PairAddress(sushiFactory_, token0_, token1_);
         IERC20 asset_ = IERC20(pair_);
-        Endaoment endaoment = new Endaoment(name_, symbol_, epochDrawBips_, epochDuration_, asset_);
+        Endaoment endaoment = new Endaoment(name_, symbol_, _msgSender(), epochDrawBips_, epochDuration_, asset_);
         createdAddress = address(endaoment);
         endaomentAddresses.push(createdAddress);
     }

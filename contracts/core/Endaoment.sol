@@ -30,21 +30,25 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
     uint256 _epochDrawBips;
     uint256 _lastEpochTimestamp;
     uint256 _epochDurationSecs;
+    address _benificiary;
 
     // 18 decimals by default
     constructor(
         string memory name_,
         string memory symbol_,
+        address beneficiary_,
         uint256 epochDrawBips_,
         uint256 epochDuration_,
         IERC20 asset_
     ) ERC20(name_, symbol_) {
+        require(beneficiary_ != address(0), "BENEFICIARY_CAN_NOT_BE_0_ADDRESS");
         // Roles
         _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
-        _grantRole(BENEFICIARY_ROLE, _msgSender());
         _grantRole(REBALANCER_ROLE, _msgSender());
+        _grantRole(BENEFICIARY_ROLE, beneficiary_);
 
         // Other Configuration
+        _beneficiary = beneficiary_;
         _lastEpochTimestamp = block.timestamp;
         _epochDrawBips = epochDrawBips_;
         _epochDurationSecs = epochDuration_;

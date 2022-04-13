@@ -71,6 +71,7 @@ describe("Endaoment", async () => {
     contract = await Endaoment.deploy(
       "Test Endaoment",
       "tendmt",
+      owner.address,
       "700",
       "2629800",
       asset.address,
