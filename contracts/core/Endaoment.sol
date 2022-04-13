@@ -7,52 +7,48 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "../libraries/EndaoLibrary.sol";
 
 // External interfaces
-import "@sushiswap/core/contracts/uniswapv2/interfaces/IUniswapV2Pair.sol";
-import "@sushiswap/core/contracts/uniswapv2/interfaces/IUniswapV2Router02.sol";
+//import "@sushiswap/core/contracts/uniswapv2/interfaces/IUniswapV2Pair.sol";
+//import "@sushiswap/core/contracts/uniswapv2/interfaces/IUniswapV2Router02.sol";
 import "@sushiswap/core/contracts/uniswapv2/interfaces/IUniswapV2Factory.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "./IAsset.sol";
 
 // Dev deps
 import "hardhat/console.sol";
 
-struct UniswapV2Asset {
-    address router;
-    address factory;
-    address base;
-    address quote;
-}
-
 contract Endaoment is AccessControlEnumerable, ERC20Burnable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
-    UniswapV2Asset public _asset;
+    event EpochAttempt(address sender, uint256 timestamp);
+    event EpochSuccess(address sender, uint256 timestamp);
+
+    IERC20 public _asset;
     bytes32 public constant BENEFICIARY_ROLE = keccak256("BENEFICIARY_ROLE");
     bytes32 public constant REBALANCER_ROLE = keccak256("REBALANCER_ROLE");
-    uint256 _targetReserveBips;
     uint256 _epochDrawBips;
-    uint256 _epochsPerAnum = 12;
-    uint256 _initialPrice = 1;
+    uint256 _lastEpochTimestamp;
+    uint256 _epochDurationSecs;
 
     // 18 decimals by default
     constructor(
         string memory name_,
         string memory symbol_,
-        uint256 annualDrawBips_,
-        uint256 targetReserveBips_,
-        address factory_,
-        address router_,
-        address token0_,
-        address token1_
+        uint256 epochDrawBips_,
+        uint256 epochDuration_,
+        IERC20 asset_
     ) ERC20(name_, symbol_) {
+        // Roles
         _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
         _grantRole(BENEFICIARY_ROLE, _msgSender());
         _grantRole(REBALANCER_ROLE, _msgSender());
-        _epochDrawBips = annualDrawBips_.div(_epochsPerAnum);
-        _targetReserveBips = targetReserveBips_;
-        _asset = UniswapV2Asset({router: router_, factory: factory_, base: token0_, quote: token1_});
+
+        // Other Configuration
+        _lastEpochTimestamp = block.timestamp;
+        _epochDrawBips = epochDrawBips_;
+        _epochDurationSecs = epochDuration_;
+        _asset = asset_;
     }
 
     receive() external payable {
@@ -60,8 +56,7 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
     }
 
     function mint(uint256 lockingAssets_) external {
-        address pair = getPairAddress(_asset.factory, _asset.base, _asset.quote);
-        IERC20 assetContract = IERC20(pair);
+        IERC20 assetContract = IERC20(_asset);
 
         uint256 senderBalance = assetContract.balanceOf(_msgSender());
         uint256 lockedAssets = assetContract.balanceOf(address(this));
@@ -79,17 +74,8 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
         _mint(_msgSender(), tokens);
     }
 
-    function getPairAddress(
-        address factory,
-        address addr1,
-        address addr2
-    ) private view returns (address pair) {
-        return EndaoLibrary.getUniswapV2PairAddress(factory, addr1, addr2);
-    }
-
     function burn(uint256 tokensToBurn_) public virtual override {
-        address pair = getPairAddress(_asset.factory, _asset.base, _asset.quote);
-        IERC20 assetContract = IERC20(pair);
+        IERC20 assetContract = IERC20(_asset);
         uint256 assetSupply = assetContract.balanceOf(address(this));
 
         uint256 outbounAssets = tokensToBurn_.mul(assetSupply).div(totalSupply());
@@ -115,12 +101,21 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
 
     function epoch() public {
         // TODO: validate message sender
-        // TODO: probably should be inflating linarly
+        emit EpochAttempt(_msgSender(), block.timestamp);
         require(hasRole(REBALANCER_ROLE, _msgSender()), "DOES_NOT_HAVE_REBALANCER_ROLE");
+
+        uint256 timeSinceLastEpoch = block.timestamp - _lastEpochTimestamp;
+        require(timeSinceLastEpoch > _epochDurationSecs, "NOT_ENOUGH_TIME_HAS_PASSED_FOR_NEW_EPOCH");
+
+        // Enough time has passed for an epoch
+        _lastEpochTimestamp = block.timestamp;
+
+        // TODO: round down
         uint256 benificiaryInflationAmount = totalSupply().mul(_epochDrawBips).div(1000);
-        if (benificiaryInflationAmount == 0) {
-            return;
-        }
+
+        require(benificiaryInflationAmount > 0, "BENIFICIARY_INFLATION_ZERO");
+
         super._mint(address(this), benificiaryInflationAmount); // Inflate supply to assigm value to the claimers
+        emit EpochSuccess(_msgSender(), block.timestamp);
     }
 }

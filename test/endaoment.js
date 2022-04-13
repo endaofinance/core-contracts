@@ -72,11 +72,8 @@ describe("Endaoment", async () => {
       "Test Endaoment",
       "tendmt",
       "700",
-      "25",
-      uniFactory.address,
-      uniRouter.address,
-      baseToken.address,
-      quoteToken.address,
+      "2629800",
+      asset.address,
     );
   });
 
@@ -138,12 +135,9 @@ describe("Endaoment", async () => {
       await contract.mint("1");
       ownerBalance = await contract.balanceOf(owner.address);
       expect(ownerBalance).to.equal("6");
-
-      await contract.epoch();
-
       await contract.burn("6");
       ownerBalance = await contract.balanceOf(owner.address);
-      expect(ownerBalance).to.equal("6");
+      expect(ownerBalance).to.equal("0");
 
       assetBalance = await asset.balanceOf(contract.address);
       expect(assetBalance).to.equal("0");

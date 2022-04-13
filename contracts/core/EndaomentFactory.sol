@@ -3,30 +3,26 @@ pragma solidity ^0.8.11;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./Endaoment.sol";
+import "../libraries/EndaoLibrary.sol";
+import "./IAsset.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract EndaomentFactory is Ownable {
+    using SafeERC20 for IERC20;
     address[] public endaomentAddresses;
 
     function createSushiEndaomant(
         string memory name_,
         string memory symbol_,
-        uint256 annualDrawBips_,
-        uint256 targetReserveBips_,
+        uint256 epochDrawBips_,
+        uint256 epochDuration_,
         address sushiFactory_,
-        address sushiRouter_,
         address token0_,
         address token1_
     ) public returns (address createdAddress) {
-        Endaoment endaoment = new Endaoment(
-            name_,
-            symbol_,
-            annualDrawBips_,
-            targetReserveBips_,
-            sushiFactory_,
-            sushiRouter_,
-            token0_,
-            token1_
-        );
+        address pair_ = EndaoLibrary.getUniswapV2PairAddress(sushiFactory_, token0_, token1_);
+        IERC20 asset_ = IERC20(pair_);
+        Endaoment endaoment = new Endaoment(name_, symbol_, epochDrawBips_, epochDuration_, asset_);
         createdAddress = address(endaoment);
         endaomentAddresses.push(createdAddress);
     }

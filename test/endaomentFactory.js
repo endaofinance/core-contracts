@@ -2,7 +2,7 @@ const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const { smock } = require("@defi-wonderland/smock");
 
-describe.only("EndaomentFactory", async () => {
+describe("EndaomentFactory", async () => {
   let contract;
   let owner;
   let assetAddr;
@@ -69,9 +69,8 @@ describe.only("EndaomentFactory", async () => {
       "Test Endaoment",
       "tendmt",
       "700",
-      "25",
+      "2629800",
       uniFactory.address,
-      uniRouter.address,
       baseToken.address,
       quoteToken.address,
     );
