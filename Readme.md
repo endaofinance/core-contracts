@@ -14,7 +14,7 @@ https://docs.endao.finance/main/
 
 ## Roadmap
 
-Roadmap can be found at https://roadmap.endao.finance
+https://roadmap.endao.finance
 
 ## Building
 
