@@ -11,12 +11,9 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 // External interfaces
 //import "@sushiswap/core/contracts/uniswapv2/interfaces/IUniswapV2Pair.sol";
 //import "@sushiswap/core/contracts/uniswapv2/interfaces/IUniswapV2Router02.sol";
-import "@sushiswap/core/contracts/uniswapv2/interfaces/IUniswapV2Factory.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "./IAsset.sol";
 
 // Dev deps
-import "hardhat/console.sol";
+//import "hardhat/console.sol";
 
 contract Endaoment is AccessControlEnumerable, ERC20Burnable {
     using SafeMath for uint256;
@@ -24,13 +21,12 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
     event EpochAttempt(address sender, uint256 timestamp);
     event EpochSuccess(address sender, uint256 timestamp);
 
-    IERC20 public _asset;
     bytes32 public constant BENEFICIARY_ROLE = keccak256("BENEFICIARY_ROLE");
     bytes32 public constant REBALANCER_ROLE = keccak256("REBALANCER_ROLE");
-    uint256 _epochDrawBips;
+    uint256 immutable _epochDrawBips;
+    uint256 immutable _epochDurationSecs;
     uint256 _lastEpochTimestamp;
-    uint256 _epochDurationSecs;
-    address _benificiary;
+    address public immutable _asset;
 
     // 18 decimals by default
     constructor(
@@ -39,7 +35,7 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
         address beneficiary_,
         uint256 epochDrawBips_,
         uint256 epochDuration_,
-        IERC20 asset_
+        address asset_
     ) ERC20(name_, symbol_) {
         require(beneficiary_ != address(0), "BENEFICIARY_CAN_NOT_BE_0_ADDRESS");
         // Roles
@@ -48,7 +44,6 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
         _grantRole(BENEFICIARY_ROLE, beneficiary_);
 
         // Other Configuration
-        _beneficiary = beneficiary_;
         _lastEpochTimestamp = block.timestamp;
         _epochDrawBips = epochDrawBips_;
         _epochDurationSecs = epochDuration_;
@@ -103,7 +98,7 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
         burn(claimed);
     }
 
-    function epoch() public {
+    function epoch() external {
         // TODO: validate message sender
         emit EpochAttempt(_msgSender(), block.timestamp);
         require(hasRole(REBALANCER_ROLE, _msgSender()), "DOES_NOT_HAVE_REBALANCER_ROLE");
