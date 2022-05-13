@@ -1,4 +1,5 @@
 require("@nomiclabs/hardhat-waffle");
+require("@nomiclabs/hardhat-web3");
 require("hardhat-gas-reporter");
 require("dotenv").config();
 
@@ -41,6 +42,12 @@ module.exports = {
     ],
   },
   networks: {
+    hardhat: {
+      forking: {
+        url: process.env.MAIN_URL,
+        blockNumber: 14769326,
+      },
+    },
     ropsten: {
       url: process.env.ROPSTEN_URL,
       accounts: [process.env.XPRV],

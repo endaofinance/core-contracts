@@ -5,37 +5,45 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./Endaoment.sol";
 
 contract EndaomentFactory is Ownable {
-    event CreateEndaoment(address sender, uint256 timestamp, address endaomentAddresses, string endaomentType);
-    mapping(address => uint256[]) public ownerEndaoments;
+    event CreateEndaoment(
+        address sender,
+        uint256 timestamp,
+        address endaomentAddresses,
+        string endaomentType,
+        uint256 endaomentsCount
+    );
+    mapping(address => address[]) creatorEndaoments;
     address[] public endaoments;
 
-    function createSushiEndaomant(
+    function createErc20Endaoment(
         string memory name_,
         string memory symbol_,
         uint256 epochDrawBips_,
         uint256 epochDuration_,
-        address uniswapPair_
+        address erc20Contract_,
+        string memory metadataURI_
     ) external returns (address createdAddress) {
-        address sender = _msgSender();
-        Endaoment endaoment = new Endaoment(name_, symbol_, sender, epochDrawBips_, epochDuration_, uniswapPair_);
+        Endaoment endaoment = new Endaoment(
+            name_,
+            symbol_,
+            _msgSender(),
+            epochDrawBips_,
+            epochDuration_,
+            erc20Contract_,
+            metadataURI_
+        );
 
-        createdAddress = address(endaoment);
-        storeEndaoment(createdAddress, sender);
+        endaoments.push(address(endaoment));
+        creatorEndaoments[_msgSender()].push(address(endaoment));
 
-        emit CreateEndaoment(sender, block.timestamp, createdAddress, "SushiSwap");
+        emit CreateEndaoment(_msgSender(), block.timestamp, address(endaoment), "ERC20", endaoments.length);
     }
 
-    function storeEndaoment(address endaomentAddress, address owner) private {
-        uint256 idx = endaoments.length;
-        endaoments.push(endaomentAddress);
-        ownerEndaoments[owner].push(idx);
+    function getAllEndaoments() external view returns (address[] memory) {
+        return endaoments;
     }
 
-    function getEndaoment(uint256 id) public view returns (address endaomentAddy) {
-        return endaoments[id];
-    }
-
-    function getEndaoments(address creatorAddress) public view returns (uint256[] memory) {
-        return ownerEndaoments[creatorAddress];
+    function getEndaomentsCreatedBy(address creatorAddress) external view returns (address[] memory) {
+        return creatorEndaoments[creatorAddress];
     }
 }

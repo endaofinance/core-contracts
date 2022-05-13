@@ -57,24 +57,21 @@ describe("EndaomentFactory", async () => {
 
     assetAddr = await uniFactory.getPair(baseToken.address, quoteToken.address);
 
-    //const AssetErc20Contract = await ethers.getContractFactory("ERC20Mock");
-    //asset = AssetErc20Contract.attach(assetAddr);
-
     const EndaomentFactory = await ethers.getContractFactory(
       "EndaomentFactory",
     );
     contract = await EndaomentFactory.deploy();
 
-    await contract.createSushiEndaomant(
+    await contract.createErc20Endaoment(
       "Test Endaoment",
       "tendmt",
       "700",
       "2629800",
       assetAddr,
+      "https://endao.finance",
     );
 
-    const userEndaoments = await contract.getEndaoments(owner.address);
-    const endaomentAddy = await contract.getEndaoment(userEndaoments[0]);
+    const endaomentAddy = await contract.endaoments("0");
 
     endaoment = await ethers.getContractAt("Endaoment", endaomentAddy);
   });
@@ -89,15 +86,18 @@ describe("EndaomentFactory", async () => {
 
   describe("core interactions", async () => {
     it("creates another endaoment", async () => {
-      await contract.createSushiEndaomant(
+      await contract.createErc20Endaoment(
         "Test Endaoment2",
         "tendmt2",
         "700",
         "2629800",
         assetAddr,
+        "https://endao.finance",
       );
 
-      const userEndaoments = await contract.getEndaoments(owner.address);
+      const userEndaoments = await contract.getEndaomentsCreatedBy(
+        owner.address,
+      );
       expect(userEndaoments.length).to.equal(2);
     });
   });

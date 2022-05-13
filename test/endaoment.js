@@ -1,7 +1,7 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const { smock } = require("@defi-wonderland/smock");
-const { expectEvent } = require("@openzeppelin/test-helpers");
+const { expectRevert } = require("@openzeppelin/test-helpers");
 
 const toContractNumber = (inNum, multiplier = 1e18) => {
   const res = inNum * multiplier;
@@ -22,6 +22,7 @@ describe("Endaoment", async () => {
     manager = signers[10];
 
     const ERC20Mock = await smock.mock("ERC20Mock");
+    const wETHAddress = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
     baseToken = await ERC20Mock.deploy(
       "wethToken",
       "WETH",
@@ -75,6 +76,7 @@ describe("Endaoment", async () => {
       "700",
       "2629800",
       asset.address,
+      "https://endao.finance",
     );
   });
 
@@ -103,8 +105,20 @@ describe("Endaoment", async () => {
       assetBalance = await asset.balanceOf(contract.address);
       expect(assetBalance).to.equal("1");
     });
-    it("can mint 1 token");
-    it("Cant mint because its not approved");
+    it("Cant mint because its not enough approved", async () => {
+      const startingBalance = await asset.balanceOf(owner.address);
+
+      let assetBalance = await asset.balanceOf(contract.address);
+      expect(assetBalance).to.equal("0");
+
+      await expectRevert(
+        contract.mint("1"),
+        "Not enough allowed assets to lock",
+      );
+
+      const ownerBalance = await asset.balanceOf(owner.address);
+      expect(ownerBalance).to.equal(startingBalance.sub("1"));
+    });
     it("Cant mint because not enough balance");
   });
   describe("burning", async () => {
