@@ -45,13 +45,19 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
     }
 
     receive() external payable {
-        require(false, "Contract does not accept ETH");
+        require(false, "ETH_NOT_ACCEPTED");
     }
 
     function mint(uint256 lockingAssets_) external {
         IERC20 assetContract = IERC20(asset);
 
-        uint256 senderBalance = assetContract.allowance(_msgSender(), address(this));
+        uint256 senderAssetAllowance = assetContract.allowance(_msgSender(), address(this));
+        uint256 senderAssetBalance = assetContract.balanceOf(_msgSender());
+        require(
+            senderAssetBalance >= lockingAssets_ && senderAssetAllowance >= lockingAssets_,
+            "NOT_ENOUGH_ASSETS_TO_LOCK"
+        );
+
         uint256 lockedAssets = assetContract.balanceOf(address(this));
 
         uint256 tokens;
@@ -61,7 +67,6 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
             tokens = lockingAssets_; // Start off 1 to 1
         }
 
-        require(senderBalance >= lockingAssets_, "Not enough allowed assets to lock");
         assetContract.safeTransferFrom(_msgSender(), address(this), lockingAssets_);
 
         _mint(_msgSender(), tokens);
@@ -70,6 +75,8 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
     function burn(uint256 tokensToBurn_) public virtual override {
         IERC20 assetContract = IERC20(asset);
         uint256 assetSupply = assetContract.balanceOf(address(this));
+
+        require(balanceOf(_msgSender()) >= tokensToBurn_, "NOT_ENOUGH_TOKENS_TO_BURN");
 
         uint256 outbounAssets = tokensToBurn_.mul(assetSupply).div(totalSupply());
 
@@ -83,25 +90,19 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
     function claim() public returns (uint256 claimed) {
         require(hasRole(BENEFICIARY_ROLE, _msgSender()), "DOES_NOT_HAVE_BENIFICIARY_ROLE");
         claimed = balanceOf(address(this));
-        transferFrom(address(this), _msgSender(), claimed);
-    }
-
-    function claimAndBurn() public returns (uint256 claimed) {
-        require(hasRole(BENEFICIARY_ROLE, _msgSender()), "DOES_NOT_HAVE_BENIFICIARY_ROLE");
-        claimed = claim();
-        burn(claimed);
+        approve(_msgSender(), claimed);
+        _transfer(address(this), _msgSender(), claimed);
     }
 
     function epoch() external {
-        // TODO: validate message sender
         emit EpochAttempt(_msgSender(), block.timestamp);
 
         uint256 timeSinceLastEpoch = block.timestamp - _lastEpochTimestamp;
-        require(timeSinceLastEpoch > epochDurationSecs, "NOT_ENOUGH_TIME_HAS_PASSED_FOR_NEW_EPOCH");
+        require(timeSinceLastEpoch >= epochDurationSecs, "NOT_ENOUGH_TIME_HAS_PASSED_FOR_NEW_EPOCH");
 
         uint256 inflationAmount = totalSupply().sub(balanceOf(address(this))).mul(epochDrawBips).div(10000);
 
-        require(inflationAmount > 0, "INFLATION_AMOUNT");
+        require(inflationAmount > 0, "INFLATION_AMOUNT_ZERO");
 
         super._mint(address(this), inflationAmount); // Inflate supply to assigm value to the claimers
 

@@ -43,7 +43,7 @@ describe("EndaomentFactory", async () => {
     quoteToken.approve(uniRouter.address, ethers.utils.parseEther("100000000"));
     await uniFactory.createPair(baseToken.address, quoteToken.address);
 
-    const dl = Math.floor(Date.now() / 1000) + 60; // 1 minute rom now
+    const deadline = Math.floor(Date.now() / 1000) + 100;
     await uniRouter.addLiquidity(
       baseToken.address,
       quoteToken.address,
@@ -52,7 +52,7 @@ describe("EndaomentFactory", async () => {
       ethers.utils.parseEther("100"),
       ethers.utils.parseEther("200"),
       owner.address,
-      dl.toString(),
+      deadline.toString(),
     );
 
     assetAddr = await uniFactory.getPair(baseToken.address, quoteToken.address);
