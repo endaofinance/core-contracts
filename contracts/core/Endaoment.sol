@@ -7,14 +7,17 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "./ITreasury.sol";
 
 contract Endaoment is AccessControlEnumerable, ERC20Burnable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
     event EpochAttempt(address sender, uint256 timestamp);
     event EpochSuccess(address sender, uint256 timestamp);
+    address _treasuryAddress;
 
     bytes32 constant BENEFICIARY_ROLE = keccak256("BENEFICIARY_ROLE");
+
     address public immutable asset;
     uint256 public immutable epochDrawBips;
     uint256 public immutable epochDurationSecs;
@@ -26,6 +29,7 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
         string memory name_,
         string memory symbol_,
         address beneficiary_,
+        address treasury_,
         uint256 epochDrawBips_,
         uint256 epochDuration_,
         address asset_,
@@ -37,6 +41,7 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
         _grantRole(BENEFICIARY_ROLE, beneficiary_);
 
         // Other Configuration
+        _treasuryAddress = treasury_;
         _lastEpochTimestamp = block.timestamp;
         epochDrawBips = epochDrawBips_;
         epochDurationSecs = epochDuration_;
@@ -78,20 +83,31 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
 
         require(balanceOf(_msgSender()) >= tokensToBurn_, "NOT_ENOUGH_TOKENS_TO_BURN");
 
-        uint256 outbounAssets = tokensToBurn_.mul(assetSupply).div(totalSupply());
+        uint256 outboundAssets = tokensToBurn_.mul(assetSupply).div(totalSupply());
 
-        assetContract.approve(address(this), outbounAssets);
-        assetContract.safeTransferFrom(address(this), _msgSender(), outbounAssets);
-        assetContract.approve(address(this), 0); // Sucks to have another gas opteration but this is more secure.
+        assetContract.approve(address(this), outboundAssets);
+
+        assetContract.safeTransferFrom(address(this), _msgSender(), outboundAssets);
+
+        assetContract.approve(address(this), 0);
 
         _burn(_msgSender(), tokensToBurn_);
     }
 
-    function claim() public returns (uint256 claimed) {
+    function claim() public returns (uint256 callerAmount) {
         require(hasRole(BENEFICIARY_ROLE, _msgSender()), "DOES_NOT_HAVE_BENIFICIARY_ROLE");
-        claimed = balanceOf(address(this));
-        approve(_msgSender(), claimed);
-        _transfer(address(this), _msgSender(), claimed);
+        uint256 claimable = balanceOf(address(this));
+
+        ITreasury treasury = ITreasury(_treasuryAddress);
+
+        uint256 protocolFee = claimable.mul(treasury.protocolFeeBips()).div(10000);
+        callerAmount = claimable.sub(protocolFee);
+
+        _transfer(address(this), _msgSender(), callerAmount);
+
+        if (protocolFee > 0) {
+            _transfer(address(this), _treasuryAddress, protocolFee);
+        }
     }
 
     function epoch() external {
@@ -104,7 +120,7 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
 
         require(inflationAmount > 0, "INFLATION_AMOUNT_ZERO");
 
-        super._mint(address(this), inflationAmount); // Inflate supply to assigm value to the claimers
+        _mint(address(this), inflationAmount); // Inflate supply and allow to claim
 
         // Enough time has passed for an epoch
         _lastEpochTimestamp = block.timestamp;

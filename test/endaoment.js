@@ -21,6 +21,7 @@ describe("Endaoment", async () => {
   let asset;
   let baseToken;
   let quoteToken;
+  let treasury;
   beforeEach(async () => {
     const signers = await ethers.getSigners();
     owner = signers[0];
@@ -73,11 +74,15 @@ describe("Endaoment", async () => {
     const AssetErc20Contract = await ethers.getContractFactory("ERC20Mock");
     asset = AssetErc20Contract.attach(assetAddr);
 
+    const Treasury = await ethers.getContractFactory("Treasury");
+    treasury = await Treasury.deploy(owner.address);
+
     const Endaoment = await ethers.getContractFactory("Endaoment");
     contract = await Endaoment.deploy(
       "Test Endaoment",
       "tendmt",
       benificiary.address,
+      treasury.address,
       "100",
       "1",
       asset.address,
@@ -201,6 +206,22 @@ describe("Endaoment", async () => {
       await benificiaryContract.claim();
       const newBalance = await contract.balanceOf(benificiary.address);
       expect(newBalance).to.equal("1");
+    });
+    it("claims correctly with protocolFee", async () => {
+      const benificiaryContract = contract.connect(benificiary);
+      await treasury.setProtocolFee("5000");
+
+      await asset.approve(contract.address, "10000");
+      await contract.mint("200");
+
+      await contract.epoch();
+
+      await benificiaryContract.claim();
+      const newBalance = await contract.balanceOf(benificiary.address);
+      expect(newBalance).to.equal("1");
+
+      const treasuryBalance = await contract.balanceOf(treasury.address);
+      expect(treasuryBalance).to.equal("1");
     });
     it("cant claim if not a benificiary", async () => {
       const miscUserContract = contract.connect(miscUser);

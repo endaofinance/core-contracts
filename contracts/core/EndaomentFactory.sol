@@ -3,8 +3,16 @@ pragma solidity ^0.8.11;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./Endaoment.sol";
+import "./Treasury.sol";
 
 contract EndaomentFactory is Ownable {
+    address treasuryAddress;
+
+    constructor() {
+        Treasury treasury = Treasury(_msgSender());
+        treasuryAddress = address(treasury);
+    }
+
     event CreateEndaoment(
         address sender,
         uint256 timestamp,
@@ -27,6 +35,7 @@ contract EndaomentFactory is Ownable {
             name_,
             symbol_,
             _msgSender(),
+            treasuryAddress,
             epochDrawBips_,
             epochDuration_,
             erc20Contract_,
