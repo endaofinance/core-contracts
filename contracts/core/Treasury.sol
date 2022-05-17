@@ -12,14 +12,14 @@ contract Treasury is AccessControlEnumerable {
         _grantRole(CLAIMER_ROLE, claimer);
     }
 
-    function setProtocolFee(uint256 bips) public {
+    function setProtocolFee(uint256 bips) external {
         require(hasRole(CLAIMER_ROLE, _msgSender()), "DOES_NOT_HAVE_CLAIMER_ROLE");
         protocolFeeBips = bips;
     }
 
-    function claimERC20(address assetAddress, uint256 amount) public returns (uint256 claimed) {
+    function claimERC20(address assetAddress, uint256 amount) external returns (uint256 claimed) {
         require(hasRole(CLAIMER_ROLE, _msgSender()), "DOES_NOT_HAVE_CLAIMER_ROLE");
         IERC20 asset = IERC20(assetAddress);
-        asset.safeTransferFrom(address(this), _msgSender(), amount);
+        asset.transfer(_msgSender(), amount);
     }
 }

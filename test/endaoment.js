@@ -1,11 +1,7 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const { smock } = require("@defi-wonderland/smock");
-const {
-  expectRevert,
-  constants,
-  expectEvent,
-} = require("@openzeppelin/test-helpers");
+const { expectRevert, constants } = require("@openzeppelin/test-helpers");
 
 const toContractNumber = (inNum, multiplier = 1e18) => {
   const res = inNum * multiplier;

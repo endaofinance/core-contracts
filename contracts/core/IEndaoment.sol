@@ -11,7 +11,5 @@ interface IEndaoment is IERC20 {
 
     function claim() external returns (uint256 claimed);
 
-    function claimAndBurn() external returns (uint256 claimed);
-
     function epoch() external;
 }
