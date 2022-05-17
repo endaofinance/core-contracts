@@ -26,8 +26,8 @@ contract EndaomentFactory is Ownable {
     function createErc20Endaoment(
         string memory name_,
         string memory symbol_,
-        uint256 epochDrawBips_,
-        uint256 epochDuration_,
+        uint64 epochDrawBips_,
+        uint64 epochDuration_,
         address erc20Contract_,
         string memory metadataURI_
     ) external returns (address createdAddress) {

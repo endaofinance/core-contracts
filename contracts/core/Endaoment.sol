@@ -19,8 +19,8 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
     bytes32 constant BENEFICIARY_ROLE = keccak256("BENEFICIARY_ROLE");
 
     address public immutable asset;
-    uint256 public immutable epochDrawBips;
-    uint256 public immutable epochDurationSecs;
+    uint64 public immutable epochDrawBips;
+    uint64 public immutable epochDurationSecs;
     string public metadataURI;
     uint64 _lastEpochTimestamp;
 
@@ -30,8 +30,8 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
         string memory symbol_,
         address beneficiary_,
         address treasury_,
-        uint256 epochDrawBips_,
-        uint256 epochDuration_,
+        uint64 epochDrawBips_,
+        uint64 epochDuration_,
         address asset_,
         string memory metadataURI_
     ) ERC20(name_, symbol_) {
@@ -114,7 +114,7 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
         uint64 t0 = uint64(block.timestamp);
         emit EpochAttempt(_msgSender(), t0);
 
-        uint256 timeSinceLastEpoch = uint64(t0) - _lastEpochTimestamp;
+        uint64 timeSinceLastEpoch = uint64(t0) - _lastEpochTimestamp;
         require(timeSinceLastEpoch >= epochDurationSecs, "NOT_ENOUGH_TIME_HAS_PASSED_FOR_NEW_EPOCH");
 
         uint256 inflationAmount = totalSupply().sub(balanceOf(address(this))).mul(epochDrawBips).div(10000);
