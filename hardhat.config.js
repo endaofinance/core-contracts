@@ -48,6 +48,10 @@ module.exports = {
     //blockNumber: 14769326,
     //},
     //},
+    rinkeby: {
+      url: process.env.RINKEBY_URL,
+      accounts: [process.env.XPRV],
+    },
     ropsten: {
       url: process.env.ROPSTEN_URL,
       accounts: [process.env.XPRV],
