@@ -13,10 +13,7 @@ describe("Endaoment", async () => {
   let owner;
   let benificiary;
   let miscUser;
-  let assetAddr;
   let asset;
-  let baseToken;
-  let quoteToken;
   let treasury;
   beforeEach(async () => {
     const signers = await ethers.getSigners();
@@ -25,50 +22,12 @@ describe("Endaoment", async () => {
     benificiary = signers[5];
 
     const ERC20Mock = await smock.mock("ERC20Mock");
-    baseToken = await ERC20Mock.deploy(
-      "wethToken",
-      "WETH",
+    asset = await ERC20Mock.deploy(
+      "CompoundToken",
+      "cETH",
       owner.address,
       ethers.utils.parseEther("10000"),
     );
-
-    quoteToken = await ERC20Mock.deploy(
-      "quoteTest",
-      "qTST",
-      owner.address,
-      ethers.utils.parseEther("10000"),
-    );
-
-    const UniswapV2FactoryMock = await smock.mock("UniswapV2FactoryMock");
-    const uniFactory = await UniswapV2FactoryMock.deploy(owner.address);
-    factory = uniFactory;
-
-    const UniswapV2Router02Mock = await smock.mock("UniswapV2Router02Mock");
-    const uniRouter = await UniswapV2Router02Mock.deploy(
-      uniFactory.address,
-      baseToken.address,
-    );
-
-    baseToken.approve(uniRouter.address, ethers.utils.parseEther("100000000"));
-    quoteToken.approve(uniRouter.address, ethers.utils.parseEther("100000000"));
-    await uniFactory.createPair(baseToken.address, quoteToken.address);
-
-    const deadline = Math.floor(Date.now() / 1000) + 100;
-    await uniRouter.addLiquidity(
-      baseToken.address,
-      quoteToken.address,
-      ethers.utils.parseEther("100"),
-      ethers.utils.parseEther("200"),
-      ethers.utils.parseEther("100"),
-      ethers.utils.parseEther("200"),
-      owner.address,
-      deadline.toString(),
-    );
-
-    assetAddr = await uniFactory.getPair(baseToken.address, quoteToken.address);
-
-    const AssetErc20Contract = await ethers.getContractFactory("ERC20Mock");
-    asset = AssetErc20Contract.attach(assetAddr);
 
     const Treasury = await ethers.getContractFactory("Treasury");
     treasury = await Treasury.deploy(owner.address);
@@ -128,7 +87,7 @@ describe("Endaoment", async () => {
       const startingBalance = await asset.balanceOf(owner.address);
 
       await asset.approve(contract.address, startingBalance);
-      await asset.transfer(constants.ZERO_ADDRESS, startingBalance, {
+      await asset.transfer(miscUser.address, startingBalance, {
         from: owner.address,
       });
 

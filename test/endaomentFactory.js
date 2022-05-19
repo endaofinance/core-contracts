@@ -5,57 +5,20 @@ const { smock } = require("@defi-wonderland/smock");
 describe("EndaomentFactory", async () => {
   let contract;
   let owner;
-  let assetAddr;
   let endaoment;
-  let baseToken;
-  let quoteToken;
+  let asset;
   beforeEach(async () => {
     const signers = await ethers.getSigners();
     owner = signers[0];
     manager = signers[10];
 
     const ERC20Mock = await smock.mock("ERC20Mock");
-    baseToken = await ERC20Mock.deploy(
+    asset = await ERC20Mock.deploy(
       "wethToken",
       "WETH",
       owner.address,
       ethers.utils.parseEther("10000"),
     );
-
-    quoteToken = await ERC20Mock.deploy(
-      "quoteTest",
-      "qTST",
-      owner.address,
-      ethers.utils.parseEther("10000"),
-    );
-
-    const UniswapV2FactoryMock = await smock.mock("UniswapV2FactoryMock");
-    const uniFactory = await UniswapV2FactoryMock.deploy(owner.address);
-    factory = uniFactory;
-
-    const UniswapV2Router02Mock = await smock.mock("UniswapV2Router02Mock");
-    const uniRouter = await UniswapV2Router02Mock.deploy(
-      uniFactory.address,
-      baseToken.address,
-    );
-
-    baseToken.approve(uniRouter.address, ethers.utils.parseEther("100000000"));
-    quoteToken.approve(uniRouter.address, ethers.utils.parseEther("100000000"));
-    await uniFactory.createPair(baseToken.address, quoteToken.address);
-
-    const deadline = Math.floor(Date.now() / 1000) + 100;
-    await uniRouter.addLiquidity(
-      baseToken.address,
-      quoteToken.address,
-      ethers.utils.parseEther("100"),
-      ethers.utils.parseEther("200"),
-      ethers.utils.parseEther("100"),
-      ethers.utils.parseEther("200"),
-      owner.address,
-      deadline.toString(),
-    );
-
-    assetAddr = await uniFactory.getPair(baseToken.address, quoteToken.address);
 
     const EndaomentFactory = await ethers.getContractFactory(
       "EndaomentFactory",
@@ -67,7 +30,7 @@ describe("EndaomentFactory", async () => {
       "tendmt",
       "700",
       "2629800",
-      assetAddr,
+      asset.address,
       "https://endao.finance",
     );
 
@@ -91,7 +54,7 @@ describe("EndaomentFactory", async () => {
         "tendmt2",
         "700",
         "2629800",
-        assetAddr,
+        asset.address,
         "https://endao.finance",
       );
 
