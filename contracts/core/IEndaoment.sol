@@ -13,11 +13,13 @@ interface IEndaoment is IERC20 {
 
     function epoch() external;
 
-    function asset() external;
+    function asset() external view returns (address);
 
-    function epochDrawBips() external;
+    function epochDrawBips() external view returns (uint64);
 
-    function epochDurationSecs() external;
+    function epochDurationSecs() external view returns (uint64);
 
-    function metadataURI() external;
+    function metadataURI() external view returns (string memory);
+
+    function lastEpochTimestamp() external view returns (uint256);
 }

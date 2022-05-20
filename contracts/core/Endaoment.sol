@@ -22,7 +22,7 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
     uint64 public immutable epochDrawBips;
     uint64 public immutable epochDurationSecs;
     string public metadataURI;
-    uint64 _lastEpochTimestamp;
+    uint64 public lastEpochTimestamp;
 
     // 18 decimals by default
     constructor(
@@ -42,7 +42,7 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
 
         // Other Configuration
         _treasuryAddress = treasury_;
-        _lastEpochTimestamp = uint64(block.timestamp);
+        lastEpochTimestamp = uint64(block.timestamp);
         epochDrawBips = epochDrawBips_;
         epochDurationSecs = epochDuration_;
         asset = asset_;
@@ -114,7 +114,7 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
         uint64 t0 = uint64(block.timestamp);
         emit EpochAttempt(_msgSender(), t0);
 
-        uint64 timeSinceLastEpoch = uint64(t0) - _lastEpochTimestamp;
+        uint64 timeSinceLastEpoch = uint64(t0) - lastEpochTimestamp;
         require(timeSinceLastEpoch >= epochDurationSecs, "NOT_ENOUGH_TIME_HAS_PASSED_FOR_NEW_EPOCH");
 
         uint256 inflationAmount = totalSupply().sub(balanceOf(address(this))).mul(epochDrawBips).div(10000);
@@ -124,7 +124,7 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
         _mint(address(this), inflationAmount); // Inflate supply and allow to claim
 
         // Enough time has passed for an epoch
-        _lastEpochTimestamp = t0;
+        lastEpochTimestamp = t0;
         emit EpochSuccess(_msgSender(), t0);
     }
 }
