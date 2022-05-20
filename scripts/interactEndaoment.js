@@ -1,7 +1,7 @@
 async function main() {
   const [deployer] = await ethers.getSigners();
 
-  const factoryAddress = "0x2Ee3B26be40Ea1F33F4BF976EF447bF6E906E39A";
+  const factoryAddress = "0xabf4d308715da6a582c8f02097361ca8b4bf478f";
 
   console.log("Deployer Address: ", deployer.address);
 
