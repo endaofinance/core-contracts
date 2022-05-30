@@ -97,12 +97,13 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
         ITreasury treasury = ITreasury(_treasuryAddress);
 
         uint256 protocolFee = claimable.mul(treasury.protocolFeeBips()).div(10000);
-        callerAmount = claimable.sub(protocolFee);
-
-        _transfer(address(this), _msgSender(), callerAmount);
-
         if (protocolFee > 0) {
+            callerAmount = claimable.sub(protocolFee);
             _transfer(address(this), _treasuryAddress, protocolFee);
+            _transfer(address(this), _msgSender(), callerAmount);
+        } else {
+            callerAmount = claimable;
+            _transfer(address(this), _msgSender(), callerAmount);
         }
     }
 
