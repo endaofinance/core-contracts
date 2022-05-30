@@ -150,6 +150,8 @@ describe("Endaoment", async () => {
   describe("claim", async () => {
     it("claims correctly", async () => {
       const benificiaryContract = contract.connect(benificiary);
+      await treasury.setProtocolFee("0");
+
       const startingBalance = await contract.balanceOf(benificiary.address);
       expect(startingBalance).to.equal("0");
 
@@ -157,6 +159,8 @@ describe("Endaoment", async () => {
       await contract.mint("100");
 
       await contract.epoch();
+      const claimable = await contract.balanceOf(contract.address);
+      expect(claimable).to.equal("1");
 
       await benificiaryContract.claim();
       const newBalance = await contract.balanceOf(benificiary.address);
