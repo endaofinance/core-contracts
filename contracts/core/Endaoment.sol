@@ -37,7 +37,6 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
     ) ERC20(name_, symbol_) {
         require(beneficiary_ != address(0), "BENEFICIARY_CAN_NOT_BE_0_ADDRESS");
         // Roles
-        _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
         _grantRole(BENEFICIARY_ROLE, beneficiary_);
 
         // Other Configuration
