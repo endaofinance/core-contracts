@@ -85,9 +85,8 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
 
         uint256 outboundAssets = tokensToBurn_.mul(assetSupply).div(totalSupply());
 
-        assetContract.safeTransfer(_msgSender(), outboundAssets);
-
         _burn(_msgSender(), tokensToBurn_);
+        assetContract.safeTransfer(_msgSender(), outboundAssets);
     }
 
     function claim() public returns (uint256 callerAmount) {
