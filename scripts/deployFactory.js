@@ -7,8 +7,11 @@ async function main() {
 
   console.log("Account balance:", (await deployer.getBalance()).toString());
 
+  const Treasury = await ethers.getContractFactory("Treasury");
+  const treasury = await Treasury.deploy(deployer.address);
+
   const EndaomentFactory = await ethers.getContractFactory("EndaomentFactory");
-  const factoryContract = await EndaomentFactory.deploy();
+  const factoryContract = await EndaomentFactory.deploy(treasury.address);
   console.log("Factory address:", factoryContract.address);
 }
 

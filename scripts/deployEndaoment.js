@@ -4,8 +4,11 @@ async function main() {
   const [deployer] = await ethers.getSigners();
   console.log("Deployer Address: ", deployer.address);
 
-  const factoryAddress = "0xaBF4d308715DA6a582c8F02097361Ca8B4bf478F";
-  const assetAddress = "0xc778417E063141139Fce010982780140Aa0cD5Ab";
+  const factoryAddress = "0xa1575b30D21Ca0864EF77F9580963109910c1618";
+  let assetAddress = "0xc778417E063141139Fce010982780140Aa0cD5Ab"; //Weth
+  //assetAddress = "0xF4242f9d78DB7218Ad72Ee3aE14469DBDE8731eD"; // stETH
+  //assetAddress = "0x5B281A6DdA0B271e91ae35DE655Ad301C976edb1"; // compoound usdc
+  //assetAddress = "0x6D7F0754FFeb405d23C51CE938289d4835bE3b14"; // compound DAI
 
   const EndaomentFactory = await ethers.getContractFactory("EndaomentFactory");
 
@@ -14,8 +17,8 @@ async function main() {
   console.log("Account balance:", (await deployer.getBalance()).toString());
 
   const req = await factoryContract.createErc20Endaoment(
-    "Test Endaoment",
-    "tendmt",
+    "FOTTW Endaoment",
+    "eFOTTW",
     "700",
     "100",
     assetAddress,
@@ -23,6 +26,7 @@ async function main() {
   );
 
   console.log("TxID", req.hash);
+  console.log(req);
 }
 
 main()

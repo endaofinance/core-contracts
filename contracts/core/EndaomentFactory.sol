@@ -3,16 +3,9 @@ pragma solidity ^0.8.11;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./Endaoment.sol";
-import "./Treasury.sol";
 
 contract EndaomentFactory is Ownable {
-    address treasuryAddress;
-
-    constructor() {
-        Treasury treasury = Treasury(_msgSender());
-        treasuryAddress = address(treasury);
-    }
-
+    address immutable treasuryAddress;
     event CreateEndaoment(
         address sender,
         uint256 timestamp,
@@ -22,6 +15,10 @@ contract EndaomentFactory is Ownable {
     );
     mapping(address => address[]) creatorEndaoments;
     address[] public endaoments;
+
+    constructor(address treasuryAddress_) {
+        treasuryAddress = treasuryAddress_;
+    }
 
     function createErc20Endaoment(
         string memory name_,

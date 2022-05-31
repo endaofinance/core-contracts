@@ -7,6 +7,7 @@ describe("EndaomentFactory", async () => {
   let owner;
   let endaoment;
   let asset;
+  let treasury;
   beforeEach(async () => {
     const signers = await ethers.getSigners();
     owner = signers[0];
@@ -20,10 +21,13 @@ describe("EndaomentFactory", async () => {
       ethers.utils.parseEther("10000"),
     );
 
+    const Treasury = await ethers.getContractFactory("Treasury");
+    treasury = await Treasury.deploy(owner.address);
+
     const EndaomentFactory = await ethers.getContractFactory(
       "EndaomentFactory",
     );
-    contract = await EndaomentFactory.deploy();
+    contract = await EndaomentFactory.deploy(treasury.address);
 
     await contract.createErc20Endaoment(
       "Test Endaoment",
