@@ -25,6 +25,7 @@ describe("Endaoment", async () => {
     asset = await ERC20Mock.deploy(
       "CompoundToken",
       "cETH",
+      8,
       owner.address,
       ethers.utils.parseEther("10000"),
     );
@@ -54,6 +55,8 @@ describe("Endaoment", async () => {
       expect(await contract.totalSupply()).to.equal(0);
       let ownerBalance = await contract.balanceOf(owner.address);
       expect(ownerBalance).to.equal(0);
+      let decimals = await contract.decimals();
+      expect(decimals).to.equal(8);
     });
   });
 

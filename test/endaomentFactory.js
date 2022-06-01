@@ -17,6 +17,7 @@ describe("EndaomentFactory", async () => {
     asset = await ERC20Mock.deploy(
       "wethToken",
       "WETH",
+      8,
       owner.address,
       ethers.utils.parseEther("10000"),
     );

@@ -16,6 +16,7 @@ describe("Treasury", async () => {
     token = await ERC20Mock.deploy(
       "wethToken",
       "WETH",
+      18,
       owner.address,
       ethers.utils.parseEther("10000"),
     );

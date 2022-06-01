@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "./ITreasury.sol";
 
 contract Endaoment is AccessControlEnumerable, ERC20Burnable {
@@ -37,6 +38,7 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
     ) ERC20(name_, symbol_) {
         require(beneficiary_ != address(0), "BENEFICIARY_CAN_NOT_BE_0_ADDRESS");
         // Roles
+        //_setRoleAdmin(BENEFICIARY_ROLE, BENEFICIARY_ROLE); // Benificiary can admin its self
         _grantRole(BENEFICIARY_ROLE, beneficiary_);
 
         // Other Configuration
@@ -121,5 +123,10 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
         // Enough time has passed for an epoch
         lastEpochTimestamp = t0;
         emit EpochSuccess(_msgSender(), t0);
+    }
+
+    function decimals() public view virtual override returns (uint8) {
+        IERC20Metadata assetContract = IERC20Metadata(asset);
+        return assetContract.decimals();
     }
 }
