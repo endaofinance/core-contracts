@@ -198,8 +198,6 @@ describe("Endaoment", async () => {
       );
       expect(await contract.balanceOf(miscUser.address)).to.equal("0");
     });
-    it("claimAndBurn correctly");
-    it("cant claimAndBurn if not a benificiary");
   });
 
   describe("contract management", async () => {
@@ -207,10 +205,5 @@ describe("Endaoment", async () => {
     it("doesnt let not approved people epoch");
     it("adds new benificiary");
     it("removes benificiary");
-    it("assigns new admin");
-    it("can enable assets");
-    it("cant enable assets");
-    it("can disable assets");
-    it("cant disable assets");
   });
 });
