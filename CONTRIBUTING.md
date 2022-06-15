@@ -20,3 +20,8 @@ In general we use the standard Github contribution workflow:
 2. Make changes on your fork
 3. Submit a pull request to the upstream master branch
 4. Code is reviewed & merged
+
+### Help / Discussion
+
+If at any point you have any questions check out the #dev room on our [Discord](https://discord.gg/2zYMwgKnWb)
+
