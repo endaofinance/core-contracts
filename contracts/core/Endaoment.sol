@@ -54,6 +54,14 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
         require(false, "ETH_NOT_ACCEPTED");
     }
 
+    function addBenificiary(address newBenificiary) {
+        _grantRole(BENEFICIARY_ROLE, newBenificiary);
+    }
+
+    function removeBenificiary(address target) {
+        _revokeRole(BENEFICIARY_ROLE, target);
+    }
+
     function mint(uint256 lockingAssets_) external {
         IERC20 assetContract = IERC20(asset);
 
