@@ -19,6 +19,7 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
 
     bytes32 constant BENEFICIARY_ROLE = keccak256("BENEFICIARY_ROLE");
 
+    uint64 public distributitorFeeBips;
     address public immutable asset;
     uint64 public immutable epochDrawBips;
     uint64 public immutable epochDurationSecs;
@@ -48,17 +49,18 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
         epochDurationSecs = epochDuration_;
         asset = asset_;
         metadataURI = metadataURI_;
+        distributitorFeeBips = 1000; // TODO: Parameterize
     }
 
     receive() external payable {
         require(false, "ETH_NOT_ACCEPTED");
     }
 
-    function addBenificiary(address newBenificiary) {
+    function addBenificiary(address newBenificiary) public {
         _grantRole(BENEFICIARY_ROLE, newBenificiary);
     }
 
-    function removeBenificiary(address target) {
+    function removeBenificiary(address target) public {
         _revokeRole(BENEFICIARY_ROLE, target);
     }
 
@@ -87,32 +89,76 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
     }
 
     function burn(uint256 tokensToBurn_) public virtual override {
+        burnTo(tokensToBurn_, _msgSender());
+    }
+
+    function burnTo(uint256 tokensToBurn_, address target) public {
         IERC20 assetContract = IERC20(asset);
         uint256 assetSupply = assetContract.balanceOf(address(this));
 
-        require(balanceOf(_msgSender()) >= tokensToBurn_, "NOT_ENOUGH_TOKENS_TO_BURN");
+        require(balanceOf(target) >= tokensToBurn_, "NOT_ENOUGH_TOKENS_TO_BURN");
 
         uint256 outboundAssets = tokensToBurn_.mul(assetSupply).div(totalSupply());
 
-        _burn(_msgSender(), tokensToBurn_);
-        assetContract.safeTransfer(_msgSender(), outboundAssets);
+        _burn(target, tokensToBurn_);
+        assetContract.safeTransfer(target, outboundAssets);
     }
 
-    function claim() public returns (uint256 callerAmount) {
-        require(hasRole(BENEFICIARY_ROLE, _msgSender()), "DOES_NOT_HAVE_BENIFICIARY_ROLE");
-        uint256 claimable = balanceOf(address(this));
+    function calculateClaimable(address distributor)
+        public
+        view
+        returns (
+            uint256 claimable,
+            uint256 protocolFee,
+            uint256 distributitorFee
+        )
+    {
+        claimable = balanceOf(address(this));
+        uint256 _distributitorFeeBips = uint256(distributitorFeeBips);
 
         ITreasury treasury = ITreasury(_treasuryAddress);
 
-        uint256 protocolFee = claimable.mul(treasury.protocolFeeBips()).div(10000);
-        if (protocolFee > 0) {
-            callerAmount = claimable.sub(protocolFee);
-            _transfer(address(this), _treasuryAddress, protocolFee);
-            _transfer(address(this), _msgSender(), callerAmount);
-        } else {
-            callerAmount = claimable;
-            _transfer(address(this), _msgSender(), callerAmount);
+        protocolFee = claimable.mul(treasury.protocolFeeBips()).div(10000);
+        distributitorFee = claimable.mul(_distributitorFeeBips).div(10000);
+        claimable = claimable.sub(protocolFee).sub(distributitorFee);
+
+        // If the caller is a beneficiary give them the distributitorFee as well
+        if (hasRole(BENEFICIARY_ROLE, distributor)) {
+            claimable = claimable.add(distributitorFee);
+            distributitorFee = 0;
         }
+
+        return (claimable, protocolFee, distributitorFee);
+    }
+
+    function distribute(address target)
+        public
+        returns (
+            uint256 beneficiaryAmount,
+            uint256 protocolFee,
+            uint256 distributitorFee
+        )
+    {
+        require(hasRole(BENEFICIARY_ROLE, target), "TARGET_DOES_NOT_HAVE_BENIFICIARY_ROLE");
+
+        (beneficiaryAmount, protocolFee, distributitorFee) = calculateClaimable(_msgSender());
+
+        if (protocolFee > 0) {
+            _transfer(address(this), _treasuryAddress, protocolFee);
+        }
+
+        if (distributitorFee > 0) {
+            _transfer(address(this), _msgSender(), distributitorFee);
+        }
+
+        _transfer(address(this), target, beneficiaryAmount);
+
+        burnTo(beneficiaryAmount, target);
+    }
+
+    function claim() public returns (uint256 callerAmount) {
+        (callerAmount, , ) = distribute(_msgSender());
+        return callerAmount;
     }
 
     function epoch() external {

@@ -150,6 +150,110 @@ describe("Endaoment", async () => {
     it("works with different decimals");
   });
 
+  describe("distribute", async () => {
+    it("distributes correctly when called from benificiary", async () => {
+      const benificiaryContract = contract.connect(benificiary);
+      await treasury.setProtocolFee("0");
+
+      const startingBalance = await contract.balanceOf(benificiary.address);
+      expect(startingBalance).to.equal("0");
+
+      let benificiaryAssetBalance = await asset.balanceOf(benificiary.address);
+      expect(benificiaryAssetBalance).to.equal("0");
+
+      await asset.approve(contract.address, "100000");
+      let funderBalance = await asset.balanceOf(owner.address);
+      await contract.mint("10000");
+      let contractAssetBalance = await asset.balanceOf(contract.address);
+      expect(contractAssetBalance).eq("10000");
+
+      await contract.epoch();
+
+      let claimable = await benificiaryContract.balanceOf(contract.address);
+      expect(claimable).to.equal("100");
+
+      await benificiaryContract.distribute(benificiary.address);
+      const newBalance = await contract.balanceOf(benificiary.address);
+      expect(newBalance).to.equal("0");
+
+      claimable = await benificiaryContract.balanceOf(contract.address);
+      expect(claimable).to.equal("0");
+
+      benificiaryAssetBalance = await asset.balanceOf(benificiary.address);
+      expect(benificiaryAssetBalance).to.equal("99");
+
+      await contract.burn("10000");
+      let newFunderBalance = await asset.balanceOf(owner.address);
+      expect(newFunderBalance).eq(funderBalance.sub("99"));
+
+      contractAssetBalance = await asset.balanceOf(contract.address);
+      expect(contractAssetBalance).eq("0");
+    });
+    it("distributes correctly when called from third party", async () => {
+      const distributor = miscUser;
+      const distributorContractConnection = contract.connect(distributor);
+      await treasury.setProtocolFee("0");
+
+      const startingBalance = await contract.balanceOf(benificiary.address);
+      expect(startingBalance).to.equal("0");
+
+      let assetBalance = await asset.balanceOf(benificiary.address);
+      expect(assetBalance).to.equal("0");
+
+      await asset.approve(contract.address, "100000");
+      let funderBalance = await asset.balanceOf(owner.address);
+      await contract.mint("10000");
+      let contractAssetBalance = await asset.balanceOf(contract.address);
+      expect(contractAssetBalance).eq("10000");
+
+      await contract.epoch();
+
+      let claimable = await contract.balanceOf(contract.address);
+      expect(claimable).to.equal("100");
+
+      await distributorContractConnection.distribute(benificiary.address);
+      const newBalance = await contract.balanceOf(benificiary.address);
+      expect(newBalance).to.equal("0");
+
+      claimable = await contract.balanceOf(contract.address);
+      expect(claimable).to.equal("0");
+
+      assetBalance = await asset.balanceOf(benificiary.address);
+      expect(assetBalance).to.equal("89");
+
+      assetBalance = await contract.balanceOf(distributor.address);
+      expect(assetBalance).to.equal("10");
+
+      await contract.burn("10000");
+      let newFunderBalance = await asset.balanceOf(owner.address);
+      expect(newFunderBalance).eq(funderBalance.sub("99"));
+
+      contractAssetBalance = await asset.balanceOf(contract.address);
+      expect(contractAssetBalance).eq("10");
+    });
+    it("fails to distribute correctly", async () => {
+      await treasury.setProtocolFee("0");
+
+      const startingBalance = await contract.balanceOf(miscUser.address);
+      expect(startingBalance).to.equal("0");
+
+      await asset.approve(contract.address, "10000");
+      await contract.mint("100");
+
+      await contract.epoch();
+
+      const claimable = await contract.balanceOf(contract.address);
+      expect(claimable).to.equal("1");
+
+      await expectRevert(
+        contract.distribute(miscUser.address),
+        "TARGET_DOES_NOT_HAVE_BENIFICIARY_ROLE",
+      );
+      const newBalance = await contract.balanceOf(miscUser.address);
+      expect(newBalance).to.equal("0");
+    });
+  });
+
   describe("claim", async () => {
     it("claims correctly", async () => {
       const benificiaryContract = contract.connect(benificiary);
