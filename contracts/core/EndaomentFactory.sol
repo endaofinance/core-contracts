@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./Endaoment.sol";
 
 contract EndaomentFactory is Ownable {
-    address immutable treasuryAddress;
+    address immutable controllerAddress;
     event CreateEndaoment(
         address sender,
         uint256 timestamp,
@@ -16,8 +16,8 @@ contract EndaomentFactory is Ownable {
     mapping(address => address[]) creatorEndaoments;
     address[] public endaoments;
 
-    constructor(address treasuryAddress_) {
-        treasuryAddress = treasuryAddress_;
+    constructor(address controllerAddress_) {
+        controllerAddress = controllerAddress_;
     }
 
     function createErc20Endaoment(
@@ -32,7 +32,7 @@ contract EndaomentFactory is Ownable {
             name_,
             symbol_,
             _msgSender(),
-            treasuryAddress,
+            controllerAddress,
             epochDrawBips_,
             epochDuration_,
             erc20Contract_,

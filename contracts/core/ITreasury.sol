@@ -2,9 +2,9 @@
 pragma solidity ^0.8.11;
 
 interface ITreasury {
-    function protocolFeeBips() external view returns (uint256);
-
-    function claimERC20(address assetAddress, uint256 amount) external returns (uint256 claimed);
-
-    function setProtocolFee(uint256 bips) external;
+    function claimERC20(
+        address assetAddress,
+        uint256 amount,
+        address target
+    ) external returns (uint256 claimed);
 }

@@ -23,7 +23,7 @@ describe("EndaomentFactory", async () => {
     );
 
     const Treasury = await ethers.getContractFactory("Treasury");
-    treasury = await Treasury.deploy(owner.address);
+    treasury = await Treasury.deploy();
 
     const EndaomentFactory = await ethers.getContractFactory(
       "EndaomentFactory",

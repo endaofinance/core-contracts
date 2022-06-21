@@ -15,6 +15,7 @@ describe("Endaoment", async () => {
   let miscUser;
   let asset;
   let treasury;
+  let controller;
   beforeEach(async () => {
     const signers = await ethers.getSigners();
     owner = signers[0];
@@ -31,14 +32,17 @@ describe("Endaoment", async () => {
     );
 
     const Treasury = await ethers.getContractFactory("Treasury");
-    treasury = await Treasury.deploy(owner.address);
+    treasury = await Treasury.deploy();
+
+    const Controller = await ethers.getContractFactory("Controller");
+    controller = await Controller.deploy(treasury.address);
 
     const Endaoment = await ethers.getContractFactory("Endaoment");
     contract = await Endaoment.deploy(
       "Test Endaoment",
       "tendmt",
       benificiary.address,
-      treasury.address,
+      controller.address,
       "100",
       "1",
       asset.address,
@@ -151,9 +155,9 @@ describe("Endaoment", async () => {
   });
 
   describe("distribute", async () => {
-    it("distributes correctly when called from benificiary", async () => {
+    it("distributeAndBurn correctly when called from benificiary", async () => {
       const benificiaryContract = contract.connect(benificiary);
-      await treasury.setProtocolFee("0");
+      await controller.setProtocolFee("0");
 
       const startingBalance = await contract.balanceOf(benificiary.address);
       expect(startingBalance).to.equal("0");
@@ -172,7 +176,7 @@ describe("Endaoment", async () => {
       let claimable = await benificiaryContract.balanceOf(contract.address);
       expect(claimable).to.equal("100");
 
-      await benificiaryContract.distribute(benificiary.address);
+      await benificiaryContract.distributeAndBurn(benificiary.address);
       const newBalance = await contract.balanceOf(benificiary.address);
       expect(newBalance).to.equal("0");
 
@@ -189,10 +193,11 @@ describe("Endaoment", async () => {
       contractAssetBalance = await asset.balanceOf(contract.address);
       expect(contractAssetBalance).eq("0");
     });
-    it("distributes correctly when called from third party", async () => {
+    it("distributeAndBurn correctly when called from third party", async () => {
       const distributor = miscUser;
       const distributorContractConnection = contract.connect(distributor);
-      await treasury.setProtocolFee("0");
+      await controller.setProtocolFee("0");
+      await controller.setDistributorFee("1000");
 
       const startingBalance = await contract.balanceOf(benificiary.address);
       expect(startingBalance).to.equal("0");
@@ -211,7 +216,9 @@ describe("Endaoment", async () => {
       let claimable = await contract.balanceOf(contract.address);
       expect(claimable).to.equal("100");
 
-      await distributorContractConnection.distribute(benificiary.address);
+      await distributorContractConnection.distributeAndBurn(
+        benificiary.address,
+      );
       const newBalance = await contract.balanceOf(benificiary.address);
       expect(newBalance).to.equal("0");
 
@@ -232,7 +239,7 @@ describe("Endaoment", async () => {
       expect(contractAssetBalance).eq("10");
     });
     it("fails to distribute correctly", async () => {
-      await treasury.setProtocolFee("0");
+      await controller.setProtocolFee("0");
 
       const startingBalance = await contract.balanceOf(miscUser.address);
       expect(startingBalance).to.equal("0");
@@ -257,37 +264,37 @@ describe("Endaoment", async () => {
   describe("claim", async () => {
     it("claims correctly", async () => {
       const benificiaryContract = contract.connect(benificiary);
-      await treasury.setProtocolFee("0");
+      await controller.setProtocolFee("0");
 
       const startingBalance = await contract.balanceOf(benificiary.address);
       expect(startingBalance).to.equal("0");
 
       await asset.approve(contract.address, "10000");
-      await contract.mint("100");
+      await contract.mint("1000");
 
       await contract.epoch();
       const claimable = await contract.balanceOf(contract.address);
-      expect(claimable).to.equal("1");
+      expect(claimable).to.equal("10");
 
       await benificiaryContract.claim();
       const newBalance = await contract.balanceOf(benificiary.address);
-      expect(newBalance).to.equal("1");
+      expect(newBalance).to.equal("10");
     });
     it("claims correctly with protocolFee", async () => {
       const benificiaryContract = contract.connect(benificiary);
-      await treasury.setProtocolFee("5000");
+      await controller.setProtocolFee("1000");
 
       await asset.approve(contract.address, "10000");
-      await contract.mint("200");
+      await contract.mint("2000");
 
       await contract.epoch();
 
       await benificiaryContract.claim();
       const newBalance = await contract.balanceOf(benificiary.address);
-      expect(newBalance).to.equal("1");
+      expect(newBalance).to.equal("18");
 
       const treasuryBalance = await contract.balanceOf(treasury.address);
-      expect(treasuryBalance).to.equal("1");
+      expect(treasuryBalance).to.equal("2");
     });
     it("cant claim if not a benificiary", async () => {
       const miscUserContract = contract.connect(miscUser);

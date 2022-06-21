@@ -8,18 +8,20 @@ import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import "./ITreasury.sol";
+import "./IController.sol";
+
+import "hardhat/console.sol";
 
 contract Endaoment is AccessControlEnumerable, ERC20Burnable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
     event EpochAttempt(address sender, uint256 timestamp);
     event EpochSuccess(address sender, uint256 timestamp);
-    address _treasuryAddress;
+    event Distribute(address target, uint256 beneficiaryAmount, uint256 protocolFee, uint256 distributitorFee);
+    address immutable controllerAddress;
 
     bytes32 constant BENEFICIARY_ROLE = keccak256("BENEFICIARY_ROLE");
 
-    uint64 public distributitorFeeBips;
     address public immutable asset;
     uint64 public immutable epochDrawBips;
     uint64 public immutable epochDurationSecs;
@@ -31,7 +33,7 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
         string memory name_,
         string memory symbol_,
         address beneficiary_,
-        address treasury_,
+        address controller_,
         uint64 epochDrawBips_,
         uint64 epochDuration_,
         address asset_,
@@ -43,13 +45,12 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
         _grantRole(BENEFICIARY_ROLE, beneficiary_);
 
         // Other Configuration
-        _treasuryAddress = treasury_;
+        controllerAddress = controller_;
         lastEpochTimestamp = uint64(block.timestamp);
         epochDrawBips = epochDrawBips_;
         epochDurationSecs = epochDuration_;
         asset = asset_;
         metadataURI = metadataURI_;
-        distributitorFeeBips = 1000; // TODO: Parameterize
     }
 
     receive() external payable {
@@ -114,12 +115,10 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
         )
     {
         claimable = balanceOf(address(this));
-        uint256 _distributitorFeeBips = uint256(distributitorFeeBips);
+        IController controller = IController(controllerAddress);
 
-        ITreasury treasury = ITreasury(_treasuryAddress);
-
-        protocolFee = claimable.mul(treasury.protocolFeeBips()).div(10000);
-        distributitorFee = claimable.mul(_distributitorFeeBips).div(10000);
+        protocolFee = claimable.mul(controller.protocolFeeBips()).div(10000);
+        distributitorFee = claimable.mul(controller.distributitorFeeBips()).div(10000);
         claimable = claimable.sub(protocolFee).sub(distributitorFee);
 
         // If the caller is a beneficiary give them the distributitorFee as well
@@ -141,10 +140,12 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
     {
         require(hasRole(BENEFICIARY_ROLE, target), "TARGET_DOES_NOT_HAVE_BENIFICIARY_ROLE");
 
+        IController controller = IController(controllerAddress);
+
         (beneficiaryAmount, protocolFee, distributitorFee) = calculateClaimable(_msgSender());
 
         if (protocolFee > 0) {
-            _transfer(address(this), _treasuryAddress, protocolFee);
+            _transfer(address(this), controller.treasuryAddress(), protocolFee);
         }
 
         if (distributitorFee > 0) {
@@ -153,6 +154,11 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
 
         _transfer(address(this), target, beneficiaryAmount);
 
+        emit Distribute(target, beneficiaryAmount, protocolFee, distributitorFee);
+    }
+
+    function distributeAndBurn(address target) public {
+        (uint256 beneficiaryAmount, , ) = distribute(target);
         burnTo(beneficiaryAmount, target);
     }
 
@@ -161,7 +167,7 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
         return callerAmount;
     }
 
-    function epoch() external {
+    function epoch() public {
         uint64 t0 = uint64(block.timestamp);
         emit EpochAttempt(_msgSender(), t0);
 
@@ -174,9 +180,14 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
 
         _mint(address(this), inflationAmount); // Inflate supply and allow to claim
 
-        // Enough time has passed for an epoch
+        // Reset epoch
         lastEpochTimestamp = t0;
         emit EpochSuccess(_msgSender(), t0);
+    }
+
+    function epochAndDistribute() public {
+        epoch();
+        distributeAndBurn(_msgSender());
     }
 
     function decimals() public view virtual override returns (uint8) {
