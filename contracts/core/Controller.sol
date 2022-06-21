@@ -6,22 +6,19 @@ contract Controller is Ownable {
     uint256 public protocolFeeBips = 0;
     uint256 public distributitorFeeBips = 0;
 
-    constructor(address _treasuryAddress) Ownable() {
+    constructor(address _treasuryAddress) {
         treasuryAddress = _treasuryAddress;
     }
 
-    function setTreasury(address target) public {
-        // TODO: gate to owner
+    function setTreasury(address target) public onlyOwner {
         treasuryAddress = target;
     }
 
-    function setDistributorFee(uint256 bips) public {
-        // TODO: gate to owner
+    function setDistributorFee(uint256 bips) public onlyOwner {
         distributitorFeeBips = bips;
     }
 
-    function setProtocolFee(uint256 bips) public {
-        // TODO: gate to owner
+    function setProtocolFee(uint256 bips) public onlyOwner {
         protocolFeeBips = bips;
     }
 }
