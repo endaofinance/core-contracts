@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.11;
 import "@openzeppelin/contracts/access/Ownable.sol";
 
@@ -15,10 +17,18 @@ contract Controller is Ownable {
     }
 
     function setDistributorFee(uint256 bips) public onlyOwner {
+        // 10000 bips max fee
+        if (bips > 10000) {
+            bips = 10000;
+        }
         distributitorFeeBips = bips;
     }
 
     function setProtocolFee(uint256 bips) public onlyOwner {
+        // 10000 bips max fee
+        if (bips > 10000) {
+            bips = 10000;
+        }
         protocolFeeBips = bips;
     }
 }
