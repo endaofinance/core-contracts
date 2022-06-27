@@ -2,8 +2,8 @@ const { utils } = require("ethers");
 
 async function main() {
   const [deployer] = await ethers.getSigners();
-  const endaomentAddress = "0x3ed4FB1E9e46c759CFA1C35b72fcA914E4F48750";
-  let newBeneficiary = "0xE673E6d4De3466B70567BD8B51e4bDA9A459A6f1";
+  const endaomentAddress = "0xA3ACAc24e4472f99F01958113Ece3f7309ef10f0";
+  let benificiary = deployer.address;
 
   let beneficiaryRole = utils.keccak256(utils.toUtf8Bytes("BENEFICIARY_ROLE"));
 
@@ -11,21 +11,21 @@ async function main() {
 
   console.log("Endaoment address", endaomentAddress);
   console.log("Deployer Address: ", deployer.address);
-  console.log("newBeneficiary address", newBeneficiary);
+  console.log("benificiary address", benificiary);
 
   const Endaoment = await ethers.getContractFactory("Endaoment");
 
   const endaoment = Endaoment.attach(endaomentAddress);
   console.log("Attached address", endaoment.address);
 
-  var res = await endaoment.hasRole(beneficiaryRole, newBeneficiary);
-  console.log("has newBeneficiary role", res);
+  var res = await endaoment.hasRole(beneficiaryRole, benificiary);
+  console.log("has benificiary role", res);
 
-  res = await endaoment.grantRole(beneficiaryRole, newBeneficiary);
-  console.log("Txid:", res.hash);
+  //res = await endaoment.grantRole(beneficiaryRole, deployer.address);
+  //console.log("Txid:", res.hash);
 
-  //res = await endaoment.claim();
-  //console.log(res.hash);
+  res = await endaoment.claim();
+  console.log(res.hash);
 }
 
 main()

@@ -162,11 +162,6 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
         burnTo(beneficiaryAmount, target);
     }
 
-    function claim() public returns (uint256 callerAmount) {
-        (callerAmount, , ) = distribute(_msgSender());
-        return callerAmount;
-    }
-
     function epoch() public {
         uint64 t0 = uint64(block.timestamp);
         emit EpochAttempt(_msgSender(), t0);
@@ -178,16 +173,16 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
 
         require(inflationAmount > 0, "INFLATION_AMOUNT_ZERO");
 
-        _mint(address(this), inflationAmount); // Inflate supply and allow to claim
+        _mint(address(this), inflationAmount); // Inflate supply
 
         // Reset epoch
         lastEpochTimestamp = t0;
         emit EpochSuccess(_msgSender(), t0);
     }
 
-    function epochAndDistribute() public {
+    function epochAndDistribute(address target) public {
         epoch();
-        distributeAndBurn(_msgSender());
+        distributeAndBurn(target);
     }
 
     function decimals() public view virtual override returns (uint8) {

@@ -5,7 +5,6 @@ pragma solidity ^0.8.11;
 import "@sushiswap/core/contracts/uniswapv2/interfaces/IUniswapV2Factory.sol";
 
 library EndaoLibrary {
-    // TODO: move to lib
     function getUniswapV2PairAddress(
         address factory,
         address addr1,

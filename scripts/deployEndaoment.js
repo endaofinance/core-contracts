@@ -4,7 +4,7 @@ async function main() {
   const [deployer] = await ethers.getSigners();
   console.log("Deployer Address: ", deployer.address);
 
-  const factoryAddress = "0x7bd97b75148C685f3651ceD5605F366eC7670B5d";
+  const factoryAddress = "0xDd7048a2c4b0A682cF89a2b1570a0d0cf0503a03";
   let assetAddress = "0xc778417E063141139Fce010982780140Aa0cD5Ab"; //Weth
   //assetAddress = "0xF4242f9d78DB7218Ad72Ee3aE14469DBDE8731eD"; // stETH
   //assetAddress = "0x5B281A6DdA0B271e91ae35DE655Ad301C976edb1"; // compoound usdc

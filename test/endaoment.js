@@ -155,6 +155,7 @@ describe("Endaoment", async () => {
   });
 
   describe("distribute", async () => {
+    it("epochAndDistribute works correctly");
     it("distributeAndBurn correctly when called from benificiary", async () => {
       const benificiaryContract = contract.connect(benificiary);
       await controller.setProtocolFee("0");
@@ -258,56 +259,6 @@ describe("Endaoment", async () => {
       );
       const newBalance = await contract.balanceOf(miscUser.address);
       expect(newBalance).to.equal("0");
-    });
-  });
-
-  describe("claim", async () => {
-    it("claims correctly", async () => {
-      const benificiaryContract = contract.connect(benificiary);
-      await controller.setProtocolFee("0");
-
-      const startingBalance = await contract.balanceOf(benificiary.address);
-      expect(startingBalance).to.equal("0");
-
-      await asset.approve(contract.address, "10000");
-      await contract.mint("1000");
-
-      await contract.epoch();
-      const claimable = await contract.balanceOf(contract.address);
-      expect(claimable).to.equal("10");
-
-      await benificiaryContract.claim();
-      const newBalance = await contract.balanceOf(benificiary.address);
-      expect(newBalance).to.equal("10");
-    });
-    it("claims correctly with protocolFee", async () => {
-      const benificiaryContract = contract.connect(benificiary);
-      await controller.setProtocolFee("1000");
-
-      await asset.approve(contract.address, "10000");
-      await contract.mint("2000");
-
-      await contract.epoch();
-
-      await benificiaryContract.claim();
-      const newBalance = await contract.balanceOf(benificiary.address);
-      expect(newBalance).to.equal("18");
-
-      const treasuryBalance = await contract.balanceOf(treasury.address);
-      expect(treasuryBalance).to.equal("2");
-    });
-    it("cant claim if not a benificiary", async () => {
-      const miscUserContract = contract.connect(miscUser);
-      await asset.approve(contract.address, "10000");
-      await contract.mint("100");
-
-      await contract.epoch();
-
-      await expectRevert(
-        miscUserContract.claim(),
-        "DOES_NOT_HAVE_BENIFICIARY_ROLE",
-      );
-      expect(await contract.balanceOf(miscUser.address)).to.equal("0");
     });
   });
 

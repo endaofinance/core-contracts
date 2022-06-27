@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.11;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "./Endaoment.sol";
+import "@openzeppelin/contracts/utils/Context.sol";
 
-contract EndaomentFactory is Ownable {
+contract EndaomentFactory is Context {
     address immutable controllerAddress;
     event CreateEndaoment(
         address sender,

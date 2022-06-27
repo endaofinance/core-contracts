@@ -9,8 +9,6 @@ interface IEndaoment is IERC20 {
 
     function burn(uint256 amountOfTokensToBurn) external;
 
-    function claim() external returns (uint256 callerAmount);
-
     function epoch() external;
 
     function asset() external view returns (address);
