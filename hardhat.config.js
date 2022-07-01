@@ -42,12 +42,10 @@ module.exports = {
     ],
   },
   networks: {
-    //hardhat: {
-    //forking: {
-    //url: process.env.MAIN_URL,
-    //blockNumber: 14769326,
-    //},
-    //},
+    goerli: {
+      url: process.env.GOERLI_URL,
+      accounts: [process.env.XPRV],
+    },
     rinkeby: {
       url: process.env.RINKEBY_URL,
       accounts: [process.env.XPRV],
