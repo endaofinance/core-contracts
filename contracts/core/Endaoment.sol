@@ -149,6 +149,10 @@ contract Endaoment is AccessControlEnumerable, ERC20Burnable {
         }
 
         if (distributitorFee > 0) {
+            require(
+                hasRole(BENEFICIARY_ROLE, _msgSender()) || balanceOf(_msgSender()) > 0,
+                "DISTRIBUTOR_NOT_VAULT_MEMBER"
+            );
             _transfer(address(this), _msgSender(), distributitorFee);
         }
 
