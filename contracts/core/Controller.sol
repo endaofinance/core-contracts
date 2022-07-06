@@ -5,8 +5,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract Controller is Ownable {
     address public treasuryAddress;
-    uint256 public protocolFeeBips = 0;
-    uint256 public distributitorFeeBips = 0;
+    uint64 public protocolFeeBips = 0;
+    uint64 public distributitorFeeBips = 0;
 
     constructor(address _treasuryAddress) {
         treasuryAddress = _treasuryAddress;
@@ -16,7 +16,7 @@ contract Controller is Ownable {
         treasuryAddress = target;
     }
 
-    function setDistributorFee(uint256 bips) public onlyOwner {
+    function setDistributorFee(uint64 bips) public onlyOwner {
         // 10000 bips max fee
         if (bips > 10000) {
             bips = 10000;
@@ -24,7 +24,7 @@ contract Controller is Ownable {
         distributitorFeeBips = bips;
     }
 
-    function setProtocolFee(uint256 bips) public onlyOwner {
+    function setProtocolFee(uint64 bips) public onlyOwner {
         // 10000 bips max fee
         if (bips > 10000) {
             bips = 10000;
